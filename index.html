@@ -1,0 +1,875 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<style>body{margin:0}[hidden]{display:none!important}img{max-width:100%}</style>
+<title>Quote Desk</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap">
+<style>
+/* Layout: a two-step counter tool. Step 1 is three intake panels; step 2 is sale details and price tables
+   on the left and a printed-quote slip pinned on the right, with the assistant underneath. */
+:root{
+  --bg:#f3f6f7; --surface:#ffffff; --sunk:#e9eef0; --ink:#13212b; --muted:#566773; --line:#d5dde2;
+  --accent:#0a6b6b; --accent-ink:#ffffff; --accent-soft:#dff0ef;
+  --points:#a85d00; --points-soft:#fbefd9; --bad:#b3261e; --bad-soft:#fbe6e4; --ok:#1d7a46;
+  --display:"Space Grotesk","Inter",system-ui,sans-serif; --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e1418; --surface:#161f25; --sunk:#1d2830; --ink:#e7eef2; --muted:#93a4b0; --line:#2b3842;
+  --accent:#56c9c1; --accent-ink:#06211f; --accent-soft:#143433;
+  --points:#f2b552; --points-soft:#3a2c12; --bad:#ff8a80; --bad-soft:#3d1c1a; --ok:#6fd49a; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0e1418; --surface:#161f25; --sunk:#1d2830; --ink:#e7eef2; --muted:#93a4b0; --line:#2b3842;
+  --accent:#56c9c1; --accent-ink:#06211f; --accent-soft:#143433;
+  --points:#f2b552; --points-soft:#3a2c12; --bad:#ff8a80; --bad-soft:#3d1c1a; --ok:#6fd49a; color-scheme:dark }
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:14px/1.5 var(--body);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px 48px}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance;line-height:1.2}
+h1{font-size:22px;font-weight:700;letter-spacing:-.01em}
+h2{font-size:17px;font-weight:600}
+h3{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-family:var(--body)}
+p{margin:0}
+.muted{color:var(--muted)} .small{font-size:12.5px} .num{font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+a{color:var(--accent)}
+
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+.tabs{display:flex;gap:4px;background:var(--sunk);padding:4px;border-radius:999px}
+.tabs a{padding:7px 16px;border-radius:999px;text-decoration:none;color:var(--muted);font-weight:500;white-space:nowrap}
+.tabs a[aria-current="page"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.status{font-size:12.5px;color:var(--muted)}
+
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 14px;cursor:pointer;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted);padding:4px 8px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.panel-head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
+.q{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.drop{border:1.5px dashed var(--line);border-radius:var(--r);padding:22px 16px;text-align:center;background:var(--bg);cursor:pointer;display:block}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.drop strong{display:block;font-weight:600}
+textarea{width:100%;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:10px 12px;resize:vertical;min-height:120px;font-family:var(--mono);font-size:12.5px}
+.row{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center}
+.log{font-size:12.5px;display:flex;flex-direction:column;gap:2px}
+.log .err{color:var(--bad)} .log .ok{color:var(--ok)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:3px 6px 3px 11px;font-size:12.5px;background:var(--bg)}
+button.chip{cursor:pointer;padding:5px 13px;font-size:13.5px;font-weight:500}
+button.chip.sel{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.chip button{border:0;background:none;cursor:pointer;color:var(--muted);padding:0 4px;font-size:14px;line-height:1}
+.tag{display:inline-block;font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--accent-soft);color:var(--accent);white-space:nowrap}
+.pill{color:var(--points);font-weight:600}
+
+.scroll{overflow:auto;max-height:440px;border:1px solid var(--line);border-radius:8px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{position:sticky;top:0;background:var(--sunk);text-align:left;font-weight:600;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:7px 10px;white-space:nowrap;z-index:1}
+td{padding:7px 10px;border-top:1px solid var(--line);vertical-align:top}
+td.r,th.r{text-align:right}
+.edit td{padding:0}
+.edit input[type=text],.edit select{width:100%;min-width:80px;border:0;background:transparent;padding:7px 10px}
+.edit input.n{text-align:right;min-width:72px;font-variant-numeric:tabular-nums}
+.edit input.w{min-width:190px}
+.edit input:focus,.edit select:focus{outline:2px solid var(--accent);outline-offset:-2px;background:var(--bg)}
+.edit td.c{text-align:center;padding:7px 6px}
+.pick tbody tr{cursor:pointer}
+.pick tbody tr:hover{background:var(--bg)}
+.pick tbody tr.on{background:var(--accent-soft)}
+.pick td.price{font-weight:600;white-space:nowrap}
+.pick td{white-space:nowrap} .pick td.wrapok{white-space:normal;min-width:150px}
+.empty{padding:22px;text-align:center;color:var(--muted)}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:18px;align-items:start}
+.col{display:flex;flex-direction:column;gap:18px;min-width:0}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px 18px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg label{flex:1;text-align:center;padding:6px 8px;cursor:pointer;font-size:13px;white-space:nowrap}
+.seg label+label{border-left:1px solid var(--line)}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label:has(input:checked){background:var(--accent);color:var(--accent-ink)}
+.seg label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:-2px}
+select.plain,input.plain{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:6px 8px;max-width:100%}
+.check{display:flex;gap:8px;align-items:flex-start;font-size:13px}
+.check input{margin-top:3px;flex:none}
+
+.slip{position:sticky;top:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.slip dl{margin:0;display:flex;flex-direction:column;gap:6px}
+.ln{display:flex;align-items:baseline;gap:8px}
+.ln dt{flex:0 1 auto;min-width:0}
+.ln .dots{flex:1;border-bottom:1px dotted var(--muted);opacity:.5;transform:translateY(-3px);min-width:12px}
+.ln dd{margin:0;font-variant-numeric:tabular-nums;white-space:nowrap}
+.total{border-top:2px solid var(--ink);padding-top:10px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.total b{font-family:var(--display);font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.pts{background:var(--points-soft);border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.pts b{font-family:var(--display);font-size:24px;color:var(--points);font-variant-numeric:tabular-nums}
+.offers{display:flex;flex-direction:column;gap:9px;font-size:13px}
+.of{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:1px 10px}
+.of .pt{font-variant-numeric:tabular-nums;font-weight:600;text-align:right}
+.of .meta{grid-column:1/-1;color:var(--muted);font-size:12px;overflow-wrap:anywhere}
+.of.out{color:var(--muted)} .of.out .nm,.of.out .pt{text-decoration:line-through;font-weight:400}
+.code{font:600 11.5px var(--mono);padding:0 5px;border-radius:4px;border:1px dashed var(--line);background:var(--accent-soft);color:var(--ink);cursor:pointer}
+.warn{background:var(--points-soft);color:var(--ink);border-left:3px solid var(--points);padding:7px 10px;border-radius:4px;font-size:12.5px}
+.block{background:var(--bad-soft);color:var(--bad);padding:8px 10px;border-radius:6px;font-size:12.5px;font-weight:500}
+details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
+
+.chat{display:flex;flex-direction:column;gap:10px}
+.msgs{display:flex;flex-direction:column;gap:10px}
+.msg{max-width:780px;padding:10px 14px;border-radius:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.user{align-self:flex-end;background:var(--accent);color:var(--accent-ink)}
+.msg.bot{align-self:flex-start;background:var(--bg);border:1px solid var(--line)}
+.pickbar{align-self:flex-start;display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;margin-top:-4px}
+.chat textarea{font-family:var(--body);font-size:14px;min-height:64px}
+@media (max-width:980px){ .grid{grid-template-columns:minmax(0,1fr)} .slip{position:static} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Quote Desk</h1>
+      <p class="muted small">Plan price, phone price, monthly total and PC Optimum points in one place.</p>
+    </div>
+    <nav class="tabs" aria-label="Steps">
+      <a href="#import" id="tab-import">1 · Import data</a>
+      <a href="#pricing" id="tab-pricing">2 · Pricing &amp; assistant</a>
+    </nav>
+  </header>
+  <div class="status" id="status" role="status">Loading saved data…</div>
+  <section class="panel" id="gate" hidden>
+    <h2>Team access code</h2>
+    <p class="muted">This site holds internal pricing. Enter the code your manager gave you. It is remembered on this device.</p>
+    <form id="gate-form" class="row"><input type="password" id="gate-code" class="plain" autocomplete="current-password" aria-label="Access code" style="width:240px"><button class="btn primary">Unlock</button></form>
+    <p class="small" id="gate-msg" style="color:var(--bad)"></p>
+  </section>
+
+  <!-- ============ STEP 1 ============ -->
+  <main id="view-import" class="col" hidden>
+    <section class="panel">
+      <div class="panel-head"><div><div class="q">“How much is this plan?”</div><h2>Carrier price tags (PDF)</h2></div>
+        <button class="btn ghost" data-add="plans">+ Add row by hand</button></div>
+      <label class="drop" id="drop-plans" for="file-plans"><strong>Drop carrier plan sheets here</strong><span class="muted small">or click to choose. One PDF per carrier. Each plan becomes one row per hardware tier, transaction type and line.</span></label>
+      <input type="file" id="file-plans" accept="application/pdf,.pdf" multiple hidden>
+      <div class="log" id="log-plans"></div>
+      <div class="chips" id="src-plans"></div>
+      <div id="tbl-plans"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div><div class="q">“How much is this phone?”</div><h2>Device price tags (pasted text)</h2></div>
+        <button class="btn ghost" data-add="devices">+ Add row by hand</button></div>
+      <textarea id="paste-devices" placeholder="Select the rows in the Digital Price Sheet, copy, and paste here. Each phone arrives as a stack of lines (carrier, product, MSRP, price, PCO, BPO, financing numbers, date); they are lined back up into columns."></textarea>
+      <div class="row">
+        <button class="btn primary" id="parse-devices">Align and import</button>
+        <label class="row small muted"><input type="checkbox" id="devices-append"> Add to the existing list instead of replacing it</label>
+      </div>
+      <div class="log" id="log-devices"></div>
+      <div class="chips" id="src-devices"></div>
+      <div id="tbl-devices"></div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div><div class="q">“What do I get for signing up?”</div><h2>Promotions and rewards (PDF)</h2></div>
+        <button class="btn ghost" data-add="promos">+ Add row by hand</button></div>
+      <label class="drop" id="drop-promos" for="file-promos"><strong>Drop the promo grid PDF here</strong><span class="muted small">or click to choose. Each offer becomes a rule: who qualifies, how it stacks, and the RQ SKU and coupon.</span></label>
+      <input type="file" id="file-promos" accept="application/pdf,.pdf" multiple hidden>
+      <div class="log" id="log-promos"></div>
+      <div class="chips" id="src-promos"></div>
+      <div id="tbl-promos"></div>
+      <p class="muted small">Stacking: an exclusive offer (the 100K type) cannot combine with standard BPOs or device points, so the quote applies whichever side earns more. Perks always stack. Optional extras are ticked by the rep on the quote.</p>
+    </section>
+    <section class="panel">
+      <div class="panel-head"><h2>Backup</h2><div class="row"><button class="btn" id="backup-export">Download backup</button><label class="btn" for="backup-file">Restore from backup</label><input type="file" id="backup-file" accept="application/json,.json" hidden></div></div>
+      <p class="muted small" id="backup-msg">A backup is one file with every plan row, phone and offer. Restoring replaces what is here now.</p>
+    </section>
+    <div class="row"><a class="btn primary" href="#pricing" style="text-decoration:none">Go to pricing →</a></div>
+  </main>
+
+  <!-- ============ STEP 2 ============ -->
+  <main id="view-pricing" hidden>
+    <div class="grid">
+      <div class="col">
+        <section class="panel">
+          <div class="field"><h3>Carrier</h3><div class="chips" id="carrier-chips"></div></div>
+          <div class="fields">
+            <div class="field"><h3 id="lbl-act">Activation</h3>
+              <div class="seg" role="radiogroup" aria-labelledby="lbl-act">
+                <label><input type="radio" name="act" id="act-NAC" value="NAC">New (NAC)</label>
+                <label><input type="radio" name="act" id="act-AAL" value="AAL">Add a line</label>
+                <label><input type="radio" name="act" id="act-HUP" value="HUP">Upgrade</label>
+              </div></div>
+            <div class="field"><h3 id="lbl-region">Region</h3>
+              <div class="seg" role="radiogroup" aria-labelledby="lbl-region">
+                <label><input type="radio" name="region" id="region-bcab" value="bcab">BC / AB</label>
+                <label><input type="radio" name="region" id="region-other" value="other">Rest of Canada</label>
+              </div></div>
+            <div class="field"><h3><label for="prog">Pricing program</label></h3>
+              <select id="prog" class="plain"><option value="std">Standard</option><option value="ls">EPP Loblaw / Student</option><option value="epp">Other EPP / RPP</option><option value="thup">THUP</option></select></div>
+            <div class="field"><h3>Trade-in</h3>
+              <label class="check"><input type="checkbox" id="trade"><span>Customer is trading in a device</span></label></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h2>Plans</h2>
+            <div class="row small">
+              <label>Type <select id="f-tx" class="plain"></select></label>
+              <label>Hardware <select id="f-hw" class="plain"><option value="">All</option><option value="byod">BYOD</option><option value="fin">Financing</option></select></label>
+              <label>Line <select id="f-line" class="plain"></select></label>
+            </div></div>
+          <div id="pick-plans"></div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head"><h2>Phones</h2>
+            <input type="text" id="dev-search" class="plain" placeholder="Search phones" aria-label="Search phones" style="width:200px"></div>
+          <div id="pick-devices"></div>
+        </section>
+      </div>
+
+      <aside class="slip" aria-live="polite">
+        <h2 id="slip-title">Quote</h2>
+        <dl id="slip-lines"></dl>
+        <div class="row small" id="pay-row" hidden><label for="pay" class="muted">Phone payment</label><select id="pay" class="plain"></select></div>
+        <div class="total"><span>Monthly total</span><b id="slip-total">$0.00</b></div>
+        <div class="row small"><label for="tax" class="muted">Tax</label><select id="tax" class="plain"></select></div>
+        <div class="pts"><span>PC Optimum points</span><span style="text-align:right"><b id="slip-pts">0</b><br><span class="small muted" id="slip-ptsval"></span></span></div>
+        <div id="slip-block"></div>
+        <div class="offers" id="slip-applied"></div>
+        <div class="offers" id="slip-extras"></div>
+        <details id="slip-outwrap"><summary id="slip-outsum"></summary><div class="offers" id="slip-out" style="margin-top:8px"></div></details>
+        <div id="slip-notes" style="display:flex;flex-direction:column;gap:6px"></div>
+        <div class="row"><button class="btn" id="copy-quote">Copy quote</button><button class="btn" id="copy-skus">Copy offer SKUs</button></div>
+      </aside>
+    </div>
+
+    <section class="panel chat" style="margin-top:18px">
+      <div class="panel-head"><h2>Ask Claude</h2><span class="muted small">Type the customer's question. Claude answers from the imported prices and offers only.</span></div>
+      <div class="msgs" id="msgs"></div>
+      <div class="chips" id="starters">
+        <button class="chip" type="button">Customer wants unlimited data and a new iPhone. What's the monthly total?</button>
+        <button class="chip" type="button">Which phone on this carrier earns the most points?</button>
+        <button class="chip" type="button">Budget is $120 a month including the phone</button>
+      </div>
+      <textarea id="chat-in" placeholder="e.g. “I'm adding a line for my daughter and she wants an iPhone 17. What will it cost and what do I get?”"></textarea>
+      <div class="row">
+        <button class="btn primary" id="chat-send">Ask</button>
+        <button class="btn" id="chat-stop" hidden>Stop</button>
+        <button class="btn ghost" id="chat-clear">Clear conversation</button>
+        <span class="small muted" id="chat-note"></span>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const el = (tag, props, ...kids) => { const e = document.createElement(tag); if (props) for (const k in props) { if (k === 'class') e.className = props[k]; else if (k === 'text') e.textContent = props[k]; else if (k.startsWith('on')) e.addEventListener(k.slice(2), props[k]); else if (props[k] !== false && props[k] != null) e.setAttribute(k, props[k] === true ? '' : props[k]); } for (const c of kids) if (c != null) e.append(c); return e; };
+const KINDS = ['plans', 'devices', 'promos'];
+const money = v => new Intl.NumberFormat('en-CA', { style: 'currency', currency: 'CAD' }).format(v || 0);
+const fmt = n => Math.round(n || 0).toLocaleString('en-CA');
+const num = v => { if (typeof v === 'number') return isFinite(v) ? v : 0; const n = parseFloat(String(v ?? '').replace(/[^0-9.\-]/g, '')); return isFinite(n) ? n : 0; };
+const blank = v => v === '' || v == null;
+const str = v => blank(v) ? '' : String(v).trim();
+const norm = s => str(s).toLowerCase().replace(/[^a-z0-9]+/g, '');
+const words = s => str(s).toLowerCase().split(/[^a-z0-9$]+/).filter(Boolean);
+const list = s => str(s).split(/[,;/]+/).map(x => x.trim()).filter(Boolean);
+const uid = p => p + Math.random().toString(36).slice(2, 7);
+const ls = { get(k, d) { try { const v = localStorage.getItem('qd2:' + k); return v == null ? d : JSON.parse(v); } catch { return d; } }, set(k, v) { try { localStorage.setItem('qd2:' + k, JSON.stringify(v)); } catch {} } };
+
+const KNOWN = ['Rogers', 'Bell', 'Fido', 'Virgin Plus', 'Telus', 'Koodo', 'Freedom', 'Chatr', 'PC Mobile', 'Lucky Mobile', 'Public Mobile'];
+const PREPAID = ['chatr', 'pcmobile', 'luckymobile', 'publicmobile'];
+const canon = c => { const n = norm(c); if (!n) return ''; return KNOWN.find(k => norm(k) === n) || KNOWN.find(k => n.length > 3 && (norm(k).startsWith(n) || n.startsWith(norm(k)))) || str(c); };
+const sameCarrier = (a, b) => !!a && !!b && norm(canon(a)) === norm(canon(b));
+const isPrepaid = c => PREPAID.includes(norm(canon(c)));
+
+const state = { plans: [], devices: [], promos: [],
+  sel: Object.assign({ carrier: '', plan: null, device: null, pay: 'fin', act: 'NAC', region: 'bcab', prog: 'std', trade: false, extras: {}, tax: 0, taxLabel: '' }, ls.get('sel', {})),
+  f: { tx: '', hw: '', line: '' }, search: '' };
+let server = false, ai = null, aiImages = null, aiTools = false;
+
+/* ---------- column definitions ---------- */
+const COLS = {
+  plans: [{ k: 'carrier', l: 'Carrier' }, { k: 'name', l: 'Plan', t: 'w' }, { k: 'data', l: 'Data' }, { k: 'transaction', l: 'Type' }, { k: 'hardware', l: 'Hardware' }, { k: 'line', l: 'Line' },
+    { k: 'monthlyPrice', l: 'Net $/mo', t: 'n' }, { k: 'regularPrice', l: 'Regular $', t: 'n' }, { k: 'code', l: 'Plan code' }, { k: 'features', l: 'Includes', t: 'w' }, { k: 'notes', l: 'Plan offers / notes', t: 'w' }],
+  devices: [{ k: 'carrier', l: 'Carrier' }, { k: 'name', l: 'Product', t: 'w' }, { k: 'msrp', l: 'MSRP', t: 'n' }, { k: 'price', l: 'Price', t: 'n' }, { k: 'pco', l: 'PCO', t: 'n' }, { k: 'bpo', l: 'BPO', t: 'n' },
+    { k: 'finMonthly', l: 'Fin. mthly', t: 'n' }, { k: 'finSaving', l: 'Fin. saving', t: 'n' }, { k: 'defPmt', l: 'Def. pmt', t: 'n' }, { k: 'finDefMonthly', l: 'Fin + def mthly', t: 'n' }, { k: 'updated', l: 'Last update' }],
+  promos: [{ k: 'name', l: 'Offer', t: 'w' }, { k: 'carrier', l: 'Carrier' }, { k: 'points', l: 'Points', t: 'n' },
+    { k: 'stack', l: 'Stacking', t: 's', o: [['bpo', 'Standard BPO'], ['excl', 'Exclusive (no BPOs)'], ['perk', 'Perk, always stacks'], ['extra', 'Optional extra']] },
+    { k: 'acts', l: 'Activation types' }, { k: 'purchase', l: 'Purchase', t: 's', o: [['any', 'Any'], ['fin', 'Financing only'], ['byod', 'BYOD only']] },
+    { k: 'region', l: 'Region', t: 's', o: [['all', 'National'], ['bcab', 'BC / AB only']] }, { k: 'trade', l: 'Needs trade-in', t: 'b' },
+    { k: 'plans', l: 'Plan must be', t: 'w' }, { k: 'minPlanPrice', l: 'Min plan $', t: 'n' }, { k: 'noTT', l: 'Excl. talk & text', t: 'b' }, { k: 'devExclude', l: 'Excluded phones', t: 'w' },
+    { k: 'eppLS', l: 'Loblaw / Student OK', t: 'b' }, { k: 'pending', l: 'Credited later', t: 'b' }, { k: 'sku', l: 'RQ SKU', t: 'w' }, { k: 'coupon', l: 'Coupon', t: 'w' }, { k: 'notes', l: 'Notes', t: 'w' }],
+};
+const PREFIX = { plans: 'p', devices: 'd', promos: 'r' };
+function clean(kind, raw, source) {
+  const o = { id: uid(PREFIX[kind]), source };
+  for (const c of COLS[kind]) {
+    const v = raw?.[c.k];
+    if (c.t === 'n') o[c.k] = blank(v) ? '' : num(v);
+    else if (c.t === 'b') o[c.k] = v === true || v === 'true';
+    else if (c.t === 's') o[c.k] = c.o.some(x => x[0] === str(v).toLowerCase()) ? str(v).toLowerCase() : c.o[0][0];
+    else o[c.k] = Array.isArray(v) ? v.join(', ') : str(v);
+  }
+  if (kind !== 'promos' || o.carrier) o.carrier = canon(o.carrier);
+  return o;
+}
+
+/* ---------- storage ---------- */
+let accessCode = ''; try { accessCode = localStorage.getItem('qd2:code') || ''; } catch {}
+const apiFetch = (path, opts = {}) => fetch(path, { ...opts, headers: { 'content-type': 'application/json', 'x-access-code': accessCode, ...(opts.headers || {}) } });
+const saver = {};
+function save(kind) {
+  if (!server) { ls.set('cat:' + kind, state[kind]); return; }
+  const s = saver[kind] ??= { busy: false, dirty: false };
+  s.dirty = true; if (s.busy) return;
+  (async () => {
+    s.busy = true;
+    while (s.dirty) {
+      s.dirty = false;
+      try { const r = await apiFetch('/api/catalog', { method: 'PUT', body: JSON.stringify({ kind, items: state[kind] }) }); if (!r.ok) throw r; setStatus(); }
+      catch (e) { $('status').textContent = e?.status === 401 ? 'The access code is no longer accepted. Reload and enter it again.' : e?.status === 413 ? 'That list is too large to save. Remove some rows.' : 'Could not save just now. Your change stays on this screen; edit again to retry.'; break; }
+    }
+    s.busy = false;
+  })();
+}
+
+/* ---------- Claude, through this site's /api/claude route ---------- */
+const b64 = blob => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
+async function claudeTurn(body, signal, onDelta) {
+  let res; try { res = await apiFetch('/api/claude', { method: 'POST', body: JSON.stringify(body), signal }); } catch { throw { code: signal?.aborted ? 'cancelled' : 'upstream_error' }; }
+  if (!res.ok) { const j = await res.json().catch(() => ({})); throw { code: res.status === 401 ? 'unauthorized' : res.status === 429 || res.status === 529 ? 'rate_limited' : res.status === 413 ? 'prompt_too_large' : 'upstream_error', message: j.error }; }
+  const blocks = [], bufs = {}; let stop = null, pending = '';
+  const handle = ev => {
+    if (ev.type === 'content_block_start') { blocks[ev.index] = { ...ev.content_block }; if (ev.content_block.type === 'tool_use') bufs[ev.index] = ''; }
+    else if (ev.type === 'content_block_delta') { const b = blocks[ev.index], d = ev.delta; if (!b) return;
+      if (d.type === 'text_delta') { b.text += d.text; onDelta(d.text); } else if (d.type === 'input_json_delta') bufs[ev.index] += d.partial_json; else if (d.type === 'thinking_delta') b.thinking += d.thinking; else if (d.type === 'signature_delta') b.signature = d.signature; }
+    else if (ev.type === 'content_block_stop') { if (ev.index in bufs) { try { blocks[ev.index].input = JSON.parse(bufs[ev.index] || '{}'); } catch { blocks[ev.index].input = {}; blocks[ev.index]._bad = true; } } }
+    else if (ev.type === 'message_delta') { if (ev.delta?.stop_reason) stop = ev.delta.stop_reason; }
+    else if (ev.type === 'error') throw { code: /overloaded|rate_limit/.test(ev.error?.type || '') ? 'rate_limited' : 'upstream_error', message: ev.error?.message };
+  };
+  const reader = res.body.getReader(), dec = new TextDecoder();
+  try { for (;;) { const { done, value } = await reader.read(); if (done) break; pending += dec.decode(value, { stream: true }); let i; while ((i = pending.indexOf('\n')) >= 0) { const line = pending.slice(0, i).trim(); pending = pending.slice(i + 1); if (line.startsWith('data:')) { const t = line.slice(5).trim(); if (t && t !== '[DONE]') handle(JSON.parse(t)); } } } }
+  catch (e) { if (e?.code) throw e; throw { code: signal?.aborted ? 'cancelled' : 'upstream_error' }; }
+  return { content: blocks.filter(Boolean), stop };
+}
+function makeAI() {
+  const run = async (input, o = {}) => {
+    const turns = typeof input === 'string' ? [{ role: 'user', content: input }] : input.map(t => ({ role: t.role, content: t.content }));
+    if (o.images?.length) { const last = turns[turns.length - 1], imgs = []; for (const b of [].concat(o.images)) imgs.push({ type: 'image', source: { type: 'base64', media_type: b.type || 'image/jpeg', data: await b64(b) } }); last.content = [...imgs, { type: 'text', text: last.content }]; }
+    const tools = (o.tools || []).map(t => ({ name: t.name, description: t.description, input_schema: t.inputSchema || { type: 'object', properties: {} } }));
+    let text = '', truncated = false;
+    for (let round = 0; round < 6; round++) {
+      let first = true;
+      const { content, stop } = await claudeTurn({ kind: o.kind || 'chat', system: o.system, messages: turns, tools: tools.length ? tools : undefined }, o.signal, d => { if (first && text) d = '\n\n' + d; first = false; text += d; o.onText?.({ text, delta: d }); });
+      if (stop === 'refusal') throw { code: 'refused' };
+      if (stop === 'max_tokens') { truncated = true; break; }
+      if (stop === 'pause_turn') { turns.push({ role: 'assistant', content }); continue; }
+      if (stop !== 'tool_use') break;
+      const results = await Promise.all(content.filter(b => b.type === 'tool_use').map(async b => {
+        const bad = b._bad; delete b._bad;
+        if (bad) return { type: 'tool_result', tool_use_id: b.id, content: 'Error: the tool input was not valid JSON', is_error: true };
+        try { const t = o.tools.find(x => x.name === b.name); if (!t) throw new Error('Unknown tool'); const r = await t.execute(b.input || {}, { signal: o.signal }); return { type: 'tool_result', tool_use_id: b.id, content: typeof r === 'string' ? r : JSON.stringify(r) }; }
+        catch (e) { return { type: 'tool_result', tool_use_id: b.id, content: 'Error: ' + (e?.message || e), is_error: true }; }
+      }));
+      turns.push({ role: 'assistant', content }, { role: 'user', content: results });
+    }
+    if (!text.trim()) throw { code: 'empty_completion' };
+    return { text: text.trim(), truncated };
+  };
+  run.json = async (input, o) => {
+    const { text, truncated } = await run(input, o);
+    const tries = [text, (text.match(/```(?:json)?\s*([\s\S]*?)```/) || [])[1], text.slice(Math.min(...['[', '{'].map(c => text.indexOf(c)).filter(i => i >= 0)), Math.max(text.lastIndexOf(']'), text.lastIndexOf('}')) + 1)];
+    if (!truncated) for (const t of tries) { if (!t) continue; try { return JSON.parse(t); } catch {} }
+    throw { code: 'invalid_json', text };
+  };
+  return run;
+}
+function setStatus() {
+  const n = KINDS.map(k => state[k].length);
+  $('status').textContent = `${n[0]} plan rows · ${n[1]} phones · ${n[2]} offers` + (server ? ' · shared with everyone who has the access code' : ' · saved in this browser only');
+}
+async function boot() {
+  let res = null; try { res = await apiFetch('/api/catalog'); } catch {}
+  if (res && res.status === 401) { $('gate').hidden = false; $('gate-msg').textContent = accessCode ? 'That code was not accepted. Check it and try again.' : ''; $('status').textContent = 'Enter the team access code to load prices.'; $('gate-code').focus(); return; }
+  $('gate').hidden = true;
+  if (res && res.ok && (res.headers.get('content-type') || '').includes('json')) {
+    const j = await res.json(); server = true;
+    for (const k of KINDS) state[k] = Array.isArray(j[k]) ? j[k] : [];
+    if (j.ai) { ai = makeAI(); aiImages = { maxCount: 6 }; aiTools = true; } else $('chat-note').textContent = NOAI;
+    loaded();
+  } else {
+    for (const k of KINDS) state[k] = ls.get('cat:' + k, []);
+    loaded(); $('chat-note').textContent = NOAI;
+    if (res && res.status === 500) { const j = await res.json().catch(() => ({})); if (j.error) $('status').textContent = j.error; }
+    else $('status').textContent += '. The server functions are not reachable, so nothing is shared and Claude is off.';
+  }
+}
+$('gate-form').addEventListener('submit', e => { e.preventDefault(); accessCode = $('gate-code').value.trim(); try { localStorage.setItem('qd2:code', accessCode); } catch {} boot(); });
+const NOAI = 'Claude is not connected. Check that this site is deployed on Netlify with ANTHROPIC_API_KEY set.';
+
+/* ---------- backup ---------- */
+$('backup-export').onclick = () => { const a = el('a', { href: URL.createObjectURL(new Blob([JSON.stringify({ app: 'quote-desk', v: 2, exported: new Date().toISOString(), plans: state.plans, devices: state.devices, promos: state.promos }, null, 1)], { type: 'application/json' })), download: `quote-desk-${new Date().toISOString().slice(0, 10)}.backup.json` }); document.body.append(a); a.click(); a.remove(); };
+$('backup-file').onchange = async () => {
+  const f = $('backup-file').files[0]; $('backup-file').value = ''; if (!f) return;
+  try { const j = JSON.parse(await f.text()); if (!KINDS.every(k => Array.isArray(j[k]))) throw 0;
+    for (const k of KINDS) { state[k] = j[k].map(r => ({ ...clean(k, r, r.source || f.name), id: r.id || uid(PREFIX[k]) })); save(k); }
+    syncFilters(); renderAll(); $('backup-msg').textContent = `Restored ${state.plans.length} plan rows, ${state.devices.length} phones and ${state.promos.length} offers from ${f.name}.`; }
+  catch { $('backup-msg').textContent = 'That file is not a Quote Desk backup.'; }
+};
+let isLoaded = false;
+function loaded() { isLoaded = true; route(); syncFilters(); renderAll(); }
+
+/* ---------- routing ---------- */
+function route() {
+  let v = location.hash.replace('#', '');
+  if (v !== 'import' && v !== 'pricing') v = (state.plans.length || state.devices.length) ? 'pricing' : 'import';
+  $('view-import').hidden = v !== 'import'; $('view-pricing').hidden = v !== 'pricing';
+  for (const t of ['import', 'pricing']) v === t ? $('tab-' + t).setAttribute('aria-current', 'page') : $('tab-' + t).removeAttribute('aria-current');
+}
+addEventListener('hashchange', route);
+
+/* ---------- import: editable tables ---------- */
+const EMPTY = { plans: 'No plans yet. Drop a carrier plan sheet PDF above.', devices: 'No phones yet. Paste rows from the Digital Price Sheet above.', promos: 'No offers yet. Drop the promo grid PDF above.' };
+function renderImport() {
+  for (const kind of KINDS) {
+    const items = state[kind], host = $('tbl-' + kind); host.textContent = '';
+    const src = $('src-' + kind); src.textContent = '';
+    const counts = new Map(); for (const it of items) counts.set(it.source || 'Added by hand', (counts.get(it.source || 'Added by hand') || 0) + 1);
+    for (const [name, n] of counts) src.append(el('span', { class: 'chip' }, `${name} · ${n}`, el('button', { title: 'Remove these rows', 'aria-label': `Remove rows from ${name}`, text: '×', onclick: () => { state[kind] = state[kind].filter(i => (i.source || 'Added by hand') !== name); save(kind); renderAll(); } })));
+    if (!items.length) { host.append(el('div', { class: 'empty small', text: EMPTY[kind] })); continue; }
+    const tb = el('tbody');
+    for (const it of items) {
+      const tr = el('tr');
+      for (const c of COLS[kind]) {
+        const id = `${kind}-${it.id}-${c.k}`; let inp;
+        const commit = v => { it[c.k] = v; save(kind); renderPricing(); };
+        if (c.t === 'b') { inp = el('input', { type: 'checkbox', id, 'aria-label': c.l }); inp.checked = !!it[c.k]; inp.onchange = () => commit(inp.checked); tr.append(el('td', { class: 'c' }, inp)); continue; }
+        if (c.t === 's') { inp = el('select', { id, 'aria-label': c.l }, ...c.o.map(([v, t]) => el('option', { value: v, text: t }))); inp.value = it[c.k] || c.o[0][0]; inp.onchange = () => commit(inp.value); }
+        else { inp = el('input', { type: 'text', id, 'aria-label': c.l, class: c.t || '', inputmode: c.t === 'n' ? 'decimal' : null }); inp.value = blank(it[c.k]) ? '' : it[c.k]; inp.onchange = () => commit(c.t === 'n' ? (inp.value.trim() === '' ? '' : num(inp.value)) : c.k === 'carrier' ? canon(inp.value) : inp.value.trim()); }
+        tr.append(el('td', null, inp));
+      }
+      tr.append(el('td', { class: 'c' }, el('button', { class: 'btn ghost', title: 'Delete row', 'aria-label': 'Delete row', text: '×', onclick: () => { state[kind] = state[kind].filter(i => i !== it); save(kind); renderAll(); } })));
+      tb.append(tr);
+    }
+    const head = el('tr'); for (const c of COLS[kind]) head.append(el('th', { class: c.t === 'n' ? 'r' : '', text: c.l })); head.append(el('th'));
+    host.append(el('div', { class: 'scroll' }, el('table', { class: 'edit' }, el('thead', null, head), tb)));
+  }
+}
+document.querySelectorAll('[data-add]').forEach(b => b.onclick = () => { const k = b.dataset.add; state[k].push(clean(k, k === 'promos' ? { acts: 'NAC, AAL, HUP', eppLS: true } : {}, '')); save(k); renderAll(); });
+
+/* ---------- import: price sheet paste (exact, no AI) ---------- */
+const DATE = /^\d{1,2}\/\d{1,2}\/\d{2,4}\s+\d{1,2}:\d{2}(:\d{2})?\s*(AM|PM)?$/i, NUMRE = /^-?\$?\d[\d,]*(\.\d+)?$/;
+function parseSheet(text) {
+  const cells = text.split(/[\t\r\n]+/).map(s => s.trim()).filter(Boolean), rows = []; let cur = [];
+  for (const c of cells) { if (DATE.test(c)) { rows.push({ cells: cur, date: c }); cur = []; } else cur.push(c); }
+  if (!rows.length || cur.some(c => NUMRE.test(c))) return null;
+  const out = [];
+  for (const r of rows) {
+    const c = [...r.cells], texts = []; while (c.length && !NUMRE.test(c[0])) texts.push(c.shift());
+    if (!texts.length || ![4, 6, 8].includes(c.length) || !c.every(x => NUMRE.test(x))) return null;
+    const name = texts.pop(), n = c.map(num);
+    out.push({ carrier: texts.pop() || '', name, msrp: n[0], price: n[1], pco: n[2], bpo: n[3], finMonthly: n[4] ?? '', finSaving: n[5] ?? '', defPmt: n[6] ?? '', finDefMonthly: n[7] ?? '', updated: r.date });
+  }
+  return out;
+}
+
+/* ---------- import: reading PDFs with Claude ---------- */
+async function readPdf(file) {
+  if (!window.pdfjsLib) throw { message: 'The PDF reader did not load. Reload the page and try again.' };
+  const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer(), isEvalSupported: false, useWorkerFetch: false }).promise;
+  const pages = Math.min(pdf.numPages, 40); let text = '';
+  for (let p = 1; p <= pages; p++) {
+    const tc = await (await pdf.getPage(p)).getTextContent();
+    const rows = [];
+    for (const it of tc.items) { if (!it.str || !it.str.trim()) continue; const x = it.transform[4], y = it.transform[5]; let r = rows.find(r => Math.abs(r.y - y) < 3); if (!r) rows.push(r = { y, items: [] }); r.items.push({ x, w: it.width || 0, s: it.str }); }
+    rows.sort((a, b) => b.y - a.y);
+    text += `\n--- page ${p} ---\n` + rows.map(r => { r.items.sort((a, b) => a.x - b.x); let out = '', end = null; for (const i of r.items) { if (end != null) out += i.x - end > 14 ? '   |   ' : i.x - end > 1 ? ' ' : ''; out += i.s; end = i.x + i.w; } return out; }).join('\n');
+  }
+  return { pdf, pages, text };
+}
+async function pageImages(pdf, n) {
+  const out = [];
+  for (let p = 1; p <= n; p++) {
+    const page = await pdf.getPage(p), base = page.getViewport({ scale: 1 }), vp = page.getViewport({ scale: Math.min(2.2, 1400 / base.width) });
+    const c = document.createElement('canvas'); c.width = vp.width; c.height = vp.height;
+    const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+    await page.render({ canvasContext: ctx, viewport: vp }).promise;
+    const b = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.88)); if (b) out.push(b);
+  }
+  return out;
+}
+const SHAPE = {
+  plans: `This is a carrier's internal plan sheet for a Canadian wireless retailer. It is a grid: plan families across the top (each split into hardware tiers such as BYOD or "Financing - Max"), and rows for line position (single / primary line, cross-sell, additional line 2, 3, 4+). Later sections cover upgrades (HUP/PPC), talk & text, migrations and data-only plans.
+Output ONE item for every priced cell: each combination of plan, hardware tier, transaction type and line. Reply with only a JSON array. Each item:
+{"carrier": string, "name": plan name e.g. "5G+ Popular", "data": e.g. "100 GB" or "Unlimited", "transaction": "NAC" | "HUP" | short label for migrations or "Data only", "hardware": "BYOD" or the financing tier exactly as printed e.g. "Financing - Max", "line": "Primary" | "Cross-sell" | "Line 2" | "Line 3" | "Line 4+" | "Line 2+", "monthlyPrice": the large price = net monthly fee after all discounts, "regularPrice": the price in brackets before discounts or null, "code": plan code printed beside the bracket price or "", "features": short summary of what the plan includes, "notes": the plan offers / discounts listed for that cell and any eligibility footnote, short}
+Skip cells showing "-". Do not invent prices.
+Example: [{"carrier":"Rogers","name":"5G+ Popular","data":"Unlimited","transaction":"NAC","hardware":"Financing - Max","line":"Primary","monthlyPrice":105,"regularPrice":120,"code":"CONM424B2","features":"CAN+US+MEX+CARIB usage 24 mo","notes":"$5 Auto-Pay, $10 TAGSRAJRZ"}]`,
+  devices: `This is a phone price list copied from a web table, so every cell landed on its own line. The source columns are: Carrier, Product, MSRP, Price, PCO (points), BPO (points), Fin. Mthly, Fin. Saving, Def. Pmt, Fin. + Def. Mthly, Last Update. Rows without financing stop after BPO; rows without a deferred payment stop after Fin. Saving. Reply with only a JSON array. Each item:
+{"carrier": string, "name": product name, "msrp": number, "price": number, "pco": number, "bpo": number, "finMonthly": number or null, "finSaving": number or null, "defPmt": number or null, "finDefMonthly": number or null, "updated": string}
+Do not guess a value that is not in the text; use null.`,
+  promos: `This is a retailer's promo grid of PC Optimum points offers by carrier. Turn every points offer into a rule. Reply with only a JSON array. Each item:
+{"name": short offer name including the carrier, e.g. "Rogers BC/AB BPO" or "TMS Perk: Bell 5G+ Ultra",
+ "carrier": carrier name, or "" for offers open to any carrier (listed under Additional Offers),
+ "points": number of PC Optimum points (75K = 75000),
+ "stack": "perk" for TMS Exclusive Customer Perks tied to a plan (stack with everything) | "excl" for an offer that says it is NOT stackable with device points offers or BPOs | "extra" for any-carrier optional offers the rep adds by hand (unlock your offer, targeted email, accessories spend & earn) | "bpo" for everything else (BPOs, bonus trade, regional BPOs, prepaid offers),
+ "acts": which activation types qualify, from NAC, AAL, HUP, comma separated. "New/HUP" means "NAC, AAL, HUP". An AAL-only offer is "AAL". "New activations" only is "NAC, AAL",
+ "purchase": "fin" if it needs a financed device / excludes BYOD | "byod" if BYOD only | "any" (use "any" for prepaid offers),
+ "region": "bcab" if limited to BC / AB, else "all",
+ "trade": true if it needs a device trade-in,
+ "plans": plan names that qualify, comma separated, e.g. "Ultimate, Popular" or "Ultra, Select"; "" if any plan,
+ "minPlanPrice": minimum monthly plan price if stated (e.g. 25), else 0,
+ "noTT": true if talk and text plans are excluded,
+ "devExclude": excluded phones, comma separated, as name prefixes: "iPhone 18 series" -> "iPhone 18"; "iPhone 18 Pro / 18 Pro Max / Duo" -> "iPhone 18 Pro, iPhone Duo"; "" if none,
+ "eppLS": true if Loblaw and Student EPP/RPP plans still qualify ("except Loblaw and Student plans"), false if the offer excludes ALL EPP activations. True when nothing is said,
+ "pending": true if points are credited later (e.g. after 2 months of service),
+ "sku": the offer SKU with its label, e.g. "ACRORB004526 [Rogers - BPO Offer]", or "",
+ "coupon": the coupon name to apply, or "",
+ "notes": anything else a rep must know (free SIM, limits, caps), short}
+One item per offer row. Ignore SKU reference tables that are not points offers (supplemental SKUs, residential SKUs).`,
+};
+const ERR = { unauthorized: 'The access code is no longer accepted. Reload the page and enter it again.', rate_limited: 'Claude is busy or the API rate limit was reached. Try again in a bit.', invalid_json: 'Claude returned something unreadable. Try again.', prompt_too_large: 'That is too much text for one import. Split it into smaller pieces.', refused: 'Claude declined this content.', image_rejected: 'The page images were rejected. Try a different PDF.', empty_completion: 'Claude returned nothing. Try again.' };
+const errText = e => ERR[e?.code] || (e?.code ? 'Something went wrong talking to Claude' + (e.message ? ` (${e.message})` : '') + '. Try again.' : (e?.message || 'Could not read that file.'));
+function logLine(kind, text, cls) { const l = el('div', { class: cls || '', text }); $('log-' + kind).append(l); return l; }
+async function extract(kind, text, images, line) {
+  const base = line.textContent;
+  const prompt = SHAPE[kind] + '\n\nUse only what is in the source. Numbers are plain numbers without $ or commas.' + (images?.length ? '\nThe page images are attached; use them to see which value belongs to which cell. The extracted text is below.' : '') + '\n\nSOURCE:\n' + text.slice(0, 150000);
+  const out = await ai.json(prompt, { kind: 'extract', images: images?.length ? images : undefined, onText: ({ text }) => { line.textContent = `${base} ${text.length.toLocaleString()} characters written`; } });
+  const arr = Array.isArray(out) ? out : Array.isArray(out?.items) ? out.items : null;
+  if (!arr) throw { code: 'invalid_json' };
+  return arr;
+}
+function merge(kind, rows, source, replaceAll) {
+  const items = rows.map(r => clean(kind, r, source));
+  state[kind] = state[kind].filter(i => i.source !== source && !replaceAll).concat(items);
+  save(kind); syncFilters(); renderAll(); return items.length;
+}
+let busy = false;
+async function importFiles(kind, files) {
+  if (!ai) { logLine(kind, NOAI + ' You can still add rows by hand.', 'err'); return; }
+  if (busy) return; busy = true;
+  for (const f of files) {
+    const line = logLine(kind, `${f.name}: reading…`);
+    try {
+      if (!/pdf$/i.test(f.type) && !/\.pdf$/i.test(f.name)) throw { message: 'Only PDF files can be dropped here.' };
+      const { pdf, pages, text } = await readPdf(f);
+      const dense = text.replace(/\s|---|page \d+/g, '').length / pages;
+      let images = null;
+      if (aiImages && (dense < 60 || pages <= Math.min(aiImages.maxCount, 6))) images = await pageImages(pdf, Math.min(pages, aiImages.maxCount));
+      if (dense < 60 && !images?.length) throw { message: 'This PDF is a scan with no readable text, and images cannot be sent from this view.' };
+      line.textContent = `${f.name}: Claude is reading ${pages} page${pages > 1 ? 's' : ''}. This can take a minute or two.`;
+      const rows = await extract(kind, text, images, line);
+      const n = merge(kind, rows, f.name);
+      line.textContent = `${f.name}: ${n} ${kind === 'plans' ? 'plan rows' : 'offers'} imported. Check the rows below against the PDF and fix anything that looks off.`; line.className = 'ok';
+    } catch (e) { line.textContent = `${f.name}: ${errText(e)}`; line.className = 'err'; if (e?.code === 'unauthorized') break; }
+  }
+  busy = false;
+}
+for (const kind of ['plans', 'promos']) {
+  const d = $('drop-' + kind), f = $('file-' + kind);
+  f.onchange = () => { importFiles(kind, [...f.files]); f.value = ''; };
+  d.addEventListener('dragover', e => { e.preventDefault(); d.classList.add('over'); });
+  d.addEventListener('dragleave', () => d.classList.remove('over'));
+  d.addEventListener('drop', e => { e.preventDefault(); d.classList.remove('over'); importFiles(kind, [...e.dataTransfer.files]); });
+}
+$('parse-devices').onclick = async () => {
+  const text = $('paste-devices').value.trim(), source = 'Pasted ' + new Date().toLocaleDateString('en-CA'), all = !$('devices-append').checked;
+  if (!text) { logLine('devices', 'Paste the price list first.', 'err'); return; }
+  const exact = parseSheet(text);
+  if (exact) { const n = merge('devices', exact, source, all); logLine('devices', `${n} phones lined up from the price sheet layout.`, 'ok'); $('paste-devices').value = ''; return; }
+  if (!ai) { logLine('devices', "This text doesn't match the price sheet layout. " + NOAI, 'err'); return; }
+  if (busy) return; busy = true; $('parse-devices').disabled = true;
+  const line = logLine('devices', "This doesn't match the usual price sheet layout, so Claude is aligning it…");
+  try {
+    const n = merge('devices', await extract('devices', text, null, line), source, all);
+    line.textContent = `${n} phones imported. Check the rows below and fix anything that looks off.`; line.className = 'ok'; $('paste-devices').value = '';
+  } catch (e) { line.textContent = errText(e); line.className = 'err'; }
+  busy = false; $('parse-devices').disabled = false;
+};
+
+/* ---------- quote engine ---------- */
+const ACT = { NAC: 'New customer', AAL: 'Add a line', HUP: 'Upgrade' };
+function payOptions(d) {
+  if (!d) return [];
+  const o = [];
+  if (!blank(d.finMonthly)) o.push(['fin', `Financing, ${money(num(d.finMonthly))}/mo × 24`]);
+  if (!blank(d.finDefMonthly)) o.push(['def', `Financing with ${money(num(d.defPmt))} deferred, ${money(num(d.finDefMonthly))}/mo`]);
+  o.push(['out', `Pay in full, ${money(o.length ? num(d.msrp) : num(d.price) || num(d.msrp))}`]);
+  return o;
+}
+function reasonFor(o, c) {
+  const acts = list(o.acts).map(a => a.toUpperCase());
+  if (acts.length && !acts.includes(c.act)) return `${ACT[c.act]} not eligible (${acts.join(' / ')} only)`;
+  if (o.purchase === 'byod' && c.purchase !== 'byod') return 'BYOD activations only';
+  if (o.purchase === 'fin' && c.purchase !== 'fin') return c.purchase === 'byod' ? 'Excludes BYOD' : 'Needs 2-year financing';
+  if (o.region === 'bcab' && c.region !== 'bcab') return 'BC / AB activations only';
+  if (o.trade && !c.trade) return 'Needs a device trade-in';
+  if (o.devExclude && c.dev) { const dw = words(c.dev.name); for (const kw of list(o.devExclude)) if (words(kw).every(t => dw.some(w => w.startsWith(t)))) return `Excludes ${kw}`; }
+  if (o.noTT && c.plan && /talk/i.test(c.plan.name)) return 'Excludes talk & text plans';
+  if (o.plans) { const need = list(o.plans); if (!c.plan) return `Choose a plan (${need.join(' / ')} qualify)`; const pw = words(c.plan.name); if (!need.some(k => words(k).every(t => pw.includes(t)))) return `Plan must be ${need.join(' / ')}`; }
+  if (num(o.minPlanPrice)) { if (!c.plan) return `Choose a plan of ${money(num(o.minPlanPrice))} or more`; if (num(c.plan.monthlyPrice) < num(o.minPlanPrice)) return `Plan must be ${money(num(o.minPlanPrice))} or more`; }
+  if (!o.eppLS && c.prog === 'ls') return 'Excludes all EPP / RPP, including Loblaw and Student';
+  return null;
+}
+function quote(over = {}) {
+  const s = { ...state.sel, ...over };
+  const plan = state.plans.find(p => p.id === s.plan) || null, dev = state.devices.find(d => d.id === s.device) || null;
+  const carrier = s.carrier, pre = isPrepaid(carrier), opts = payOptions(dev);
+  const pay = opts.some(o => o[0] === s.pay) ? s.pay : opts[0]?.[0] || null;
+  const purchase = !dev ? (pre ? 'pre' : 'byod') : pay === 'out' ? (pre ? 'pre' : 'out') : 'fin';
+  const devM = pay === 'fin' ? num(dev.finMonthly) : pay === 'def' ? num(dev.finDefMonthly) : 0;
+  const due = !dev ? 0 : pay === 'out' ? (opts.length > 1 ? num(dev.msrp) : num(dev.price) || num(dev.msrp)) : num(dev.price);
+  const sub = (plan ? num(plan.monthlyPrice) : 0) + devM, rate = num(s.tax) / 100;
+  const c = { act: s.act, purchase, region: s.region, trade: s.trade, prog: s.prog, plan, dev };
+  const blocked = s.prog === 'epp' || s.prog === 'thup' || (s.prog === 'ls' && !['rogers', 'bell'].includes(norm(canon(carrier))));
+  const applied = [], out = [], notes = [];
+  const offers = state.promos.filter(o => o.stack !== 'extra' && sameCarrier(o.carrier, carrier));
+  if (dev && num(dev.pco)) offers.push({ id: 'devpco', name: `Device points: ${dev.name}`, points: num(dev.pco), stack: 'bpo', purchase: 'fin', region: 'all', eppLS: true, device: true });
+  if (blocked) offers.forEach(o => out.push({ o, why: 'THUP / EPP / RPP not eligible for points' }));
+  else {
+    const ok = []; offers.forEach(o => { const r = reasonFor(o, c); r ? out.push({ o, why: r }) : ok.push(o); });
+    const excl = ok.filter(o => o.stack === 'excl'), bpo = ok.filter(o => o.stack === 'bpo'), perk = ok.filter(o => o.stack === 'perk');
+    const sum = a => a.reduce((t, o) => t + num(o.points), 0), eP = sum(excl), bP = sum(bpo);
+    if (excl.length && bpo.length) {
+      if (eP >= bP) { applied.push(...excl); bpo.forEach(o => out.push({ o, why: `Doesn't stack with ${excl[0].name} (${fmt(eP)} ${eP > bP ? 'beats' : 'matches'} ${fmt(bP)})` })); }
+      else { applied.push(...bpo); excl.forEach(o => out.push({ o, why: `Doesn't stack with BPOs or device points, which earn more here (${fmt(bP)})` })); }
+    } else applied.push(...excl, ...bpo);
+    applied.push(...perk);
+    for (const o of applied) {
+      if (dev && /iphone\s*18/i.test(dev.name) && /excl\.?\s*iphone\s*18\s*series/i.test(o.coupon || '')) notes.push(`${o.name}: the grid allows this phone, but the coupon name says "excl. iPhone 18 series". Confirm the coupon applies in RQ.`);
+      if (o.notes && !o.device) notes.push(`${o.name}: ${o.notes}`);
+    }
+    if (carrier && !state.promos.some(o => o.stack !== 'extra' && sameCarrier(o.carrier, carrier))) notes.push(`No points offers are listed for ${carrier} on the imported promo grid.`);
+  }
+  const extras = state.promos.filter(o => o.stack === 'extra' && (!o.carrier || sameCarrier(o.carrier, carrier)));
+  for (const o of extras) if (s.extras?.[o.id]) (blocked ? out.push({ o, why: 'THUP / EPP / RPP not eligible for points' }) : applied.push(o));
+  const now = applied.filter(o => !o.pending).reduce((t, o) => t + num(o.points), 0), later = applied.filter(o => o.pending).reduce((t, o) => t + num(o.points), 0);
+  if (dev && num(dev.bpo) && !blocked) notes.push(`The price sheet lists up to ${fmt(num(dev.bpo))} BPO points for this phone on the best plan. The offers above are worked out from the promo grid for the plan and sale details you picked.`);
+  return { s, carrier, plan, dev, pre, opts, pay, purchase, devM, due, sub, tax: sub * rate, total: sub * (1 + rate), blocked, applied, out, notes, extras, now, later };
+}
+
+/* ---------- pricing view ---------- */
+function carriers() { const set = new Map(); for (const k of ['plans', 'devices']) for (const i of state[k]) if (i.carrier) set.set(norm(canon(i.carrier)), canon(i.carrier)); return [...set.values()].sort((a, b) => (KNOWN.indexOf(a) + 99) % 99 - (KNOWN.indexOf(b) + 99) % 99 || a.localeCompare(b)); }
+const carrierPlans = () => state.plans.filter(p => sameCarrier(p.carrier, state.sel.carrier));
+const planVisible = p => (!state.f.tx || p.transaction === state.f.tx) && (!state.f.hw || (state.f.hw === 'byod' ? /byod/i : /fin/i).test(p.hardware)) && (!state.f.line || p.line === state.f.line);
+function syncFilters() {
+  const ps = carrierPlans(), txs = [...new Set(ps.map(p => p.transaction).filter(Boolean))];
+  const hasDev = !!state.devices.find(d => d.id === state.sel.device);
+  state.f.tx = (state.sel.act === 'HUP' ? txs.find(t => /hup|upgrade/i.test(t)) : txs.find(t => /^nac/i.test(t))) || '';
+  const inTx = ps.filter(p => !state.f.tx || p.transaction === state.f.tx);
+  state.f.hw = inTx.some(p => (hasDev ? /fin/i : /byod/i).test(p.hardware)) ? (hasDev ? 'fin' : 'byod') : '';
+  const lines = [...new Set(inTx.map(p => p.line).filter(Boolean))];
+  state.f.line = (state.sel.act === 'AAL' ? lines.find(l => /2/.test(l)) : lines.find(l => /primary|single/i.test(l))) || '';
+  const cur = state.plans.find(p => p.id === state.sel.plan);
+  if (cur && !(sameCarrier(cur.carrier, state.sel.carrier) && planVisible(cur))) { const swap = ps.filter(planVisible).filter(p => p.name === cur.name).sort((a, b) => (b.hardware === cur.hardware) - (a.hardware === cur.hardware) || num(a.monthlyPrice) - num(b.monthlyPrice))[0]; state.sel.plan = swap ? swap.id : null; }
+}
+function select(patch, resync = true) { Object.assign(state.sel, patch); if (resync) syncFilters(); ls.set('sel', state.sel); renderPricing(); }
+function fillSelect(sel, values, cur) { sel.textContent = ''; sel.append(el('option', { value: '', text: 'All' })); for (const v of values) sel.append(el('option', { value: v, text: v })); sel.value = values.includes(cur) ? cur : ''; }
+
+function renderPricing() {
+  setStatus();
+  const cs = carriers();
+  if (!cs.some(c => sameCarrier(c, state.sel.carrier))) { state.sel.carrier = cs.find(c => state.plans.some(p => sameCarrier(p.carrier, c))) || cs[0] || ''; syncFilters(); }
+  if (!state.plans.some(p => p.id === state.sel.plan)) state.sel.plan = null;
+  const dv = state.devices.find(d => d.id === state.sel.device); if (!dv || !sameCarrier(dv.carrier, state.sel.carrier)) state.sel.device = null;
+  const cc = $('carrier-chips'); cc.textContent = '';
+  if (!cs.length) cc.append(el('span', { class: 'muted small', text: 'Carriers appear here once plans or phones are imported.' }));
+  for (const c of cs) { const on = sameCarrier(c, state.sel.carrier); cc.append(el('button', { class: 'chip' + (on ? ' sel' : ''), type: 'button', 'aria-pressed': String(on), text: c, onclick: () => select({ carrier: c, plan: null, device: null }) })); }
+  for (const a of ['NAC', 'AAL', 'HUP']) $('act-' + a).checked = state.sel.act === a;
+  $('region-bcab').checked = state.sel.region === 'bcab'; $('region-other').checked = state.sel.region !== 'bcab';
+  $('prog').value = state.sel.prog; $('trade').checked = !!state.sel.trade;
+
+  // plans
+  const ps = carrierPlans();
+  fillSelect($('f-tx'), [...new Set(ps.map(p => p.transaction).filter(Boolean))], state.f.tx);
+  fillSelect($('f-line'), [...new Set(ps.filter(p => !state.f.tx || p.transaction === state.f.tx).map(p => p.line).filter(Boolean))], state.f.line);
+  $('f-hw').value = state.f.hw;
+  const ph = $('pick-plans'); ph.textContent = '';
+  const shown = ps.filter(planVisible).sort((a, b) => num(a.monthlyPrice) - num(b.monthlyPrice));
+  if (!state.plans.length) ph.append(el('div', { class: 'empty' }, 'No plans yet. ', el('a', { href: '#import', text: 'Import a carrier plan sheet' }), ' to fill this table.'));
+  else if (!ps.length) ph.append(el('div', { class: 'empty' }, `No plan sheet imported for ${state.sel.carrier} yet. Phone prices and device points still work. `, el('a', { href: '#import', text: 'Import its plan sheet' }), ' to add plan prices and plan-based offers.'));
+  else if (!shown.length) ph.append(el('div', { class: 'empty', text: 'No plans match these filters. Set a filter back to All.' }));
+  else {
+    const tb = el('tbody');
+    for (const p of shown) {
+      const on = p.id === state.sel.plan;
+      tb.append(el('tr', { class: on ? 'on' : '', onclick: () => select({ plan: on ? null : p.id }, false) },
+        el('td', null, el('input', { type: 'radio', name: 'plan', 'aria-label': `${p.name} ${p.hardware} ${p.line}`, checked: on })),
+        el('td', { class: 'wrapok' }, el('b', { text: p.name }), el('div', { class: 'muted small', text: [p.features, p.notes].filter(Boolean).join(' · ') })),
+        el('td', { text: p.data }), el('td', { text: p.hardware }), el('td', { text: [p.transaction, p.line].filter(Boolean).join(' · ') }),
+        el('td', { class: 'r price num' }, money(num(p.monthlyPrice)), !blank(p.regularPrice) && num(p.regularPrice) !== num(p.monthlyPrice) ? el('div', { class: 'muted small', style: 'font-weight:400', text: `reg. ${money(num(p.regularPrice))}` }) : null)));
+    }
+    ph.append(el('div', { class: 'scroll' }, el('table', { class: 'pick' }, el('thead', null, el('tr', null, el('th'), el('th', { text: 'Plan' }), el('th', { text: 'Data' }), el('th', { text: 'Hardware' }), el('th', { text: 'Type · line' }), el('th', { class: 'r', text: 'Net $/mo' }))), tb)));
+  }
+  // devices
+  const dh = $('pick-devices'); dh.textContent = '';
+  const ds = state.devices.filter(d => sameCarrier(d.carrier, state.sel.carrier)), q = words(state.search);
+  if (!state.devices.length) dh.append(el('div', { class: 'empty' }, 'No phones yet. ', el('a', { href: '#import', text: 'Paste the Digital Price Sheet' }), ' to fill this table.'));
+  else if (!ds.length) dh.append(el('div', { class: 'empty', text: `No phones on the price sheet for ${state.sel.carrier}.` }));
+  else {
+    const tb = el('tbody');
+    tb.append(el('tr', { class: !state.sel.device ? 'on' : '', onclick: () => select({ device: null }) }, el('td', null, el('input', { type: 'radio', name: 'device', 'aria-label': 'No phone', checked: !state.sel.device })), el('td', { colspan: 6 }, el('b', { text: 'No phone' }), el('span', { class: 'muted', text: '  · customer brings their own (BYOD)' }))));
+    for (const d of ds.filter(d => q.every(t => d.name.toLowerCase().includes(t))).sort((a, b) => a.name.localeCompare(b.name))) {
+      const on = d.id === state.sel.device, dash = v => blank(v) ? '—' : money(num(v));
+      tb.append(el('tr', { class: on ? 'on' : '', onclick: () => select({ device: d.id }) },
+        el('td', null, el('input', { type: 'radio', name: 'device', 'aria-label': d.name, checked: on })),
+        el('td', null, el('b', { text: d.name })), el('td', { class: 'r num', text: dash(d.msrp) }), el('td', { class: 'r num', text: dash(d.price) }),
+        el('td', { class: 'r price num', text: dash(d.finMonthly) }),
+        el('td', { class: 'r num' }, blank(d.finDefMonthly) ? '—' : money(num(d.finDefMonthly)), blank(d.defPmt) ? null : el('div', { class: 'muted small', text: `${money(num(d.defPmt))} deferred` })),
+        el('td', { class: 'r num' }, el('span', { class: num(d.pco) ? 'pill' : 'muted', text: fmt(num(d.pco)) }), ' / ', el('span', { class: num(d.bpo) ? 'pill' : 'muted', text: fmt(num(d.bpo)) }))));
+    }
+    dh.append(el('div', { class: 'scroll' }, el('table', { class: 'pick' }, el('thead', null, el('tr', null, el('th'), el('th', { text: 'Phone' }), el('th', { class: 'r', text: 'MSRP' }), el('th', { class: 'r', text: 'Price' }), el('th', { class: 'r', text: 'Fin. $/mo' }), el('th', { class: 'r', text: 'With deferral' }), el('th', { class: 'r', text: 'PCO / BPO pts' }))), tb)));
+  }
+  renderSlip();
+}
+function offerRow(o, why) {
+  const row = el('div', { class: 'of' + (why ? ' out' : '') }, el('span', { class: 'nm' }, o.name || 'Offer', o.stack === 'perk' && !why ? el('span', { class: 'tag', style: 'margin-left:6px', text: 'Perk' }) : null), el('span', { class: 'pt', text: (o.pending && !why ? '+' : '') + fmt(num(o.points)) }));
+  if (why) { row.append(el('span', { class: 'meta', text: why })); return row; }
+  if (o.pending) row.append(el('span', { class: 'meta', text: "Credited later, not on today's receipt." }));
+  if (o.sku) { const m = el('span', { class: 'meta' }, 'SKU '); let last = 0; for (const x of o.sku.matchAll(/[A-Z]{6}\d{6}/g)) { m.append(o.sku.slice(last, x.index), el('button', { class: 'code', type: 'button', title: 'Copy ' + x[0], text: x[0], onclick: e => copy(x[0], e.currentTarget, x[0]) })); last = x.index + x[0].length; } m.append(o.sku.slice(last)); row.append(m); }
+  if (o.coupon) row.append(el('span', { class: 'meta', text: 'Coupon: ' + o.coupon }));
+  return row;
+}
+function renderSlip() {
+  const q = quote(), L = $('slip-lines'); L.textContent = '';
+  $('slip-title').textContent = q.carrier ? `Quote · ${q.carrier}` : 'Quote';
+  const ln = (a, b) => L.append(el('div', { class: 'ln' }, el('dt', { text: a }), el('span', { class: 'dots' }), el('dd', { text: b })));
+  ln(q.plan ? `${q.plan.name} · ${q.plan.hardware}` : 'No plan chosen', q.plan ? money(num(q.plan.monthlyPrice)) : '—');
+  ln(q.dev ? q.dev.name : 'No phone (BYOD)', q.dev ? (q.pay === 'out' ? 'paid in full' : money(q.devM)) : money(0));
+  if (num(q.s.tax)) { ln('Before tax', money(q.sub)); ln(`Tax ${num(q.s.tax)}%`, money(q.tax)); }
+  if (q.due) ln('Due today for phone', money(q.due));
+  if (q.pay === 'def') ln('Deferred to end of term', money(num(q.dev.defPmt)));
+  const pr = $('pay'); $('pay-row').hidden = q.opts.length < 2; pr.textContent = ''; for (const [v, t] of q.opts) pr.append(el('option', { value: v, text: t })); if (q.pay) pr.value = q.pay;
+  $('slip-total').textContent = money(q.total);
+  $('slip-pts').textContent = fmt(q.now);
+  $('slip-ptsval').textContent = (q.now ? `worth ${money(q.now / 1000)}` : 'no offer applies') + (q.later ? ` · plus ${fmt(q.later)} later` : '');
+  $('slip-block').textContent = ''; if (q.blocked) $('slip-block').append(el('div', { class: 'block', text: q.s.prog === 'ls' ? 'Only Bell and Rogers Loblaw / Student EPP is eligible for points. This activation earns none.' : "THUP and EPP / RPP activations aren't eligible for any points offers." }));
+  const A = $('slip-applied'); A.textContent = ''; const core = q.applied.filter(o => o.stack !== 'extra');
+  if (core.length) { A.append(el('h3', { text: 'Applied offers' })); core.forEach(o => A.append(offerRow(o))); }
+  const X = $('slip-extras'); X.textContent = '';
+  if (q.extras.length) {
+    X.append(el('h3', { text: 'Optional extras' }));
+    for (const o of q.extras) { const id = 'ex-' + o.id, cb = el('input', { type: 'checkbox', id }); cb.checked = !!q.s.extras?.[o.id]; cb.onchange = () => { state.sel.extras = { ...state.sel.extras, [o.id]: cb.checked }; ls.set('sel', state.sel); renderSlip(); };
+      X.append(el('label', { class: 'check', for: id }, cb, el('span', null, `${o.name}: ${fmt(num(o.points))} pts`, o.notes ? el('div', { class: 'muted small', text: o.notes }) : null, cb.checked && !q.blocked && (o.sku || o.coupon) ? el('div', { class: 'muted small', text: [o.sku && 'SKU ' + o.sku, o.coupon && 'Coupon: ' + o.coupon].filter(Boolean).join(' · ') }) : null))); }
+  }
+  $('slip-outwrap').hidden = !q.out.length; $('slip-outsum').textContent = `Not applied (${q.out.length})`; const O = $('slip-out'); O.textContent = ''; q.out.forEach(({ o, why }) => O.append(offerRow(o, why)));
+  const N = $('slip-notes'); N.textContent = ''; q.notes.forEach(n => N.append(el('div', { class: 'warn', text: n })));
+}
+function quoteText() {
+  const q = quote(), out = [`${q.carrier || 'Quote'} · ${ACT[q.s.act]}`];
+  out.push(`Plan: ${q.plan ? `${q.plan.name} (${q.plan.data}, ${q.plan.hardware}) ${money(num(q.plan.monthlyPrice))}/mo` : 'none selected'}`);
+  out.push(`Phone: ${q.dev ? `${q.dev.name}, ${q.pay === 'out' ? 'paid in full' : money(q.devM) + '/mo for 24 months'}${q.due ? `, ${money(q.due)} due today` : ''}${q.pay === 'def' ? `, ${money(num(q.dev.defPmt))} deferred` : ''}` : 'none (BYOD)'}`);
+  out.push(`Monthly total: ${money(q.total)}${num(q.s.tax) ? ` including ${num(q.s.tax)}% tax` : ' before tax'}`);
+  out.push(`PC Optimum points: ${fmt(q.now)}${q.now ? ` (worth ${money(q.now / 1000)})` : ''}${q.later ? ` + ${fmt(q.later)} later` : ''}`);
+  for (const o of q.applied) out.push(`  - ${o.name}: ${fmt(num(o.points))}${o.sku ? ` · SKU ${o.sku}` : ''}${o.coupon ? ` · Coupon: ${o.coupon}` : ''}`);
+  return out.join('\n');
+}
+async function copy(text, btn, label) { let ok = true; try { await navigator.clipboard.writeText(text); } catch { ok = false; } btn.textContent = ok ? 'Copied' : 'Copy blocked here'; setTimeout(() => btn.textContent = label, 1400); }
+$('copy-quote').onclick = e => copy(quoteText(), e.currentTarget, 'Copy quote');
+$('copy-skus').onclick = e => { const codes = [...new Set(quote().applied.flatMap(o => (o.sku || '').match(/[A-Z]{6}\d{6}/g) || []))]; if (!codes.length) { e.currentTarget.textContent = 'No SKUs on this quote'; const b = e.currentTarget; setTimeout(() => b.textContent = 'Copy offer SKUs', 1400); return; } copy(codes.join(', '), e.currentTarget, 'Copy offer SKUs'); };
+for (const r of document.getElementsByName('act')) r.onchange = () => select({ act: r.value });
+for (const r of document.getElementsByName('region')) r.onchange = () => select({ region: r.value }, false);
+$('prog').onchange = () => select({ prog: $('prog').value }, false);
+$('trade').onchange = () => select({ trade: $('trade').checked }, false);
+$('pay').onchange = () => select({ pay: $('pay').value }, false);
+$('f-tx').onchange = () => { state.f.tx = $('f-tx').value; renderPricing(); };
+$('f-hw').onchange = () => { state.f.hw = $('f-hw').value; renderPricing(); };
+$('f-line').onchange = () => { state.f.line = $('f-line').value; renderPricing(); };
+$('dev-search').oninput = () => { state.search = $('dev-search').value; renderPricing(); $('dev-search').focus(); };
+const TAX = [['0', 'Show before tax'], ['5', 'AB / territories 5%'], ['12', 'BC 12%'], ['12', 'MB 12%'], ['15', 'NB 15%'], ['15', 'NL 15%'], ['14', 'NS 14%'], ['13', 'ON 13%'], ['15', 'PE 15%'], ['14.975', 'QC 14.975%'], ['11', 'SK 11%']];
+TAX.forEach(([v, t], i) => $('tax').append(el('option', { value: i, text: t })));
+$('tax').value = Math.max(0, TAX.findIndex(([v, t]) => t === state.sel.taxLabel));
+$('tax').onchange = () => { const [v, t] = TAX[$('tax').value]; select({ tax: num(v), taxLabel: t }, false); };
+
+/* ---------- assistant ---------- */
+const turns = []; let ctl = null;
+function catalogText() {
+  const q = quote(), c = state.sel.carrier, L = [];
+  L.push(`CARRIER ON SCREEN: ${c || 'none'}. Other carriers with data: ${carriers().filter(x => !sameCarrier(x, c)).join(', ') || 'none'}.`);
+  L.push('', 'PLANS (id | carrier | plan | data | type | hardware | line | net $/month | regular $ | includes | plan offers)');
+  for (const p of state.plans) L.push([p.id, p.carrier, p.name, p.data, p.transaction, p.hardware, p.line, num(p.monthlyPrice), blank(p.regularPrice) ? '' : num(p.regularPrice), p.features, p.notes].join(' | '));
+  L.push('', 'PHONES (id | carrier | phone | MSRP | price due today when financed | financing $/month over 24 | deferred payment | $/month with deferral | device PCO points | best-case BPO points)');
+  for (const d of state.devices) L.push([d.id, d.carrier, d.name, num(d.msrp), num(d.price), blank(d.finMonthly) ? 'no financing' : num(d.finMonthly), blank(d.defPmt) ? '' : num(d.defPmt), blank(d.finDefMonthly) ? '' : num(d.finDefMonthly), num(d.pco), num(d.bpo)].join(' | '));
+  L.push('', 'POINTS OFFERS (offer | carrier, blank = any | points | stacking | activation types | purchase | region | needs trade-in | plan must be | min plan $ | excluded phones | Loblaw/Student EPP ok | credited later | notes)');
+  for (const o of state.promos) L.push([o.name, o.carrier, num(o.points), o.stack, o.acts, o.purchase, o.region, o.trade ? 'yes' : 'no', o.plans, num(o.minPlanPrice) || '', o.devExclude, o.eppLS ? 'yes' : 'no', o.pending ? 'yes' : 'no', o.notes].join(' | '));
+  L.push('', `SALE DETAILS ON SCREEN: ${ACT[state.sel.act]} (${state.sel.act}), region ${state.sel.region === 'bcab' ? 'BC / AB' : 'rest of Canada'}, program ${state.sel.prog}, trade-in ${state.sel.trade ? 'yes' : 'no'}.`);
+  L.push(`SELECTED ON SCREEN: plan ${q.plan ? q.plan.id : 'none'}, phone ${q.dev ? q.dev.id : 'none'}. Exact result for it: ${money(q.sub)}/month before tax, ${fmt(q.now)} points today${q.later ? `, ${fmt(q.later)} later` : ''} (${q.applied.map(o => `${o.name} ${fmt(num(o.points))}`).join('; ') || 'no offers'}).`);
+  return L.join('\n');
+}
+const RULES = () => `You are helping a sales rep at a Canadian wireless retail counter (The Mobile Shop style: carrier plans, phones, PC Optimum points). The rep types what a customer asked or needs. Using ONLY the catalog below, write:
+
+Say to the customer: 2 to 5 friendly sentences the rep can read out, with exact prices.
+Best match: carrier, plan, phone if any, monthly total before tax (plan net price + phone monthly payment), and the PC Optimum points earned with the offers that produce them.
+Alternative: one other option only if it is a real trade-off (cheaper, more data, more points).
+
+Rules: never invent a price, plan, phone or offer. If the catalog lacks something, say what is missing. Match the plan row to the sale: new customers use NAC rows, upgrades use HUP rows, a financed phone needs a Financing hardware row, no phone uses BYOD. Points: "excl" offers do not combine with "bpo" offers or device PCO points, so count whichever side is larger; "perk" offers always add; "extra" offers only if the rep says so. Device PCO points need a financed phone. THUP and EPP/RPP activations earn nothing, except Loblaw / Student EPP on Rogers or Bell. 1,000 points = $1.${aiTools ? ' You have a quote tool that returns the exact monthly total and points for a plan id and phone id under the sale details on screen: call it for your best match (and the alternative) before you answer, at most 3 calls, and use its numbers.' : ' The page shows the exact total and points beside your pick, so if you are unsure of a points figure say it will be confirmed on the quote.'} Reply in the language the rep wrote in. Plain text only, no markdown symbols.
+End with one final line, exactly in this form, naming your best match by id (null where none): @@PICK {"plan":"<plan id or null>","device":"<phone id or null>"}
+
+CATALOG
+${catalogText()}`;
+function splitPick(text) {
+  const i = text.indexOf('@@'); if (i < 0) return { body: text.trim(), pick: null };
+  let pick = null; const m = text.slice(i).match(/\{[\s\S]*\}/); if (m) { try { pick = JSON.parse(m[0]); } catch {} }
+  return { body: text.slice(0, i).trim(), pick };
+}
+function pickSel(pick) {
+  const plan = state.plans.find(p => p.id === pick?.plan) || null, dev = state.devices.find(d => d.id === pick?.device) || null;
+  if (!plan && !dev) return null;
+  return { carrier: canon((plan || dev).carrier), plan: plan?.id ?? null, device: dev && (!plan || sameCarrier(dev.carrier, plan.carrier)) ? dev.id : null };
+}
+function addMsg(role, text) { const m = el('div', { class: 'msg ' + (role === 'user' ? 'user' : 'bot'), text }); $('msgs').append(m); return m; }
+function addPick(pick) {
+  const s = pickSel(pick); if (!s) return; const q = quote(s);
+  $('msgs').append(el('div', { class: 'pickbar' },
+    el('span', { class: 'num' }, el('b', { text: [q.carrier, q.plan && `${q.plan.name} (${q.plan.hardware})`, q.dev?.name].filter(Boolean).join(' · ') }), ` · ${money(q.sub)}/mo before tax · ${fmt(q.now)} pts`),
+    el('button', { class: 'btn', type: 'button', text: 'Show this quote', onclick: () => { Object.assign(state.sel, s); state.f = { tx: '', hw: '', line: '' }; ls.set('sel', state.sel); renderPricing(); document.querySelector('.slip').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' }); } })));
+}
+const TOOLS = [{ name: 'quote', description: 'Exact monthly total before tax and exact PC Optimum points for one plan and/or phone under the sale details currently on screen. Returns monthlyBeforeTax, phoneMonthly, dueToday, pointsToday, pointsLater, appliedOffers and notApplied with reasons.',
+  inputSchema: { type: 'object', properties: { plan: { type: 'string', description: 'plan id, or empty' }, device: { type: 'string', description: 'phone id, or empty for BYOD' } } },
+  execute(input) { const s = pickSel({ plan: String(input.plan || ''), device: String(input.device || '') }); if (!s) throw new Error('Unknown plan and phone id'); const q = quote(s);
+    return { carrier: q.carrier, monthlyBeforeTax: +q.sub.toFixed(2), phoneMonthly: +q.devM.toFixed(2), dueToday: q.due, pointsToday: q.now, pointsLater: q.later, appliedOffers: q.applied.map(o => ({ offer: o.name, points: num(o.points) })), notApplied: q.out.slice(0, 8).map(({ o, why }) => ({ offer: o.name, why })) }; } }];
+async function ask() {
+  const text = $('chat-in').value.trim(); if (!text || ctl) return;
+  if (!ai) { $('chat-note').textContent = NOAI; return; }
+  if (!state.plans.length && !state.devices.length) { $('chat-note').textContent = 'Import plans or phones first so Claude has prices to work from.'; return; }
+  $('chat-in').value = ''; $('chat-note').textContent = ''; $('starters').hidden = true;
+  addMsg('user', text); turns.push({ role: 'user', content: text });
+  const bubble = addMsg('bot', 'Thinking…');
+  ctl = new AbortController(); $('chat-send').disabled = true; $('chat-stop').hidden = false;
+  try {
+    const recent = turns.slice(-12); while (recent[0].role !== 'user') recent.shift();
+    const opts = { kind: 'chat', system: RULES(), signal: ctl.signal, onText: ({ text }) => { bubble.textContent = splitPick(text).body || 'Thinking…'; } }; if (aiTools) opts.tools = TOOLS;
+    const { text: ans, truncated } = await ai(recent, opts);
+    const { body, pick } = splitPick(ans); bubble.textContent = body; turns.push({ role: 'assistant', content: body }); addPick(pick);
+    if (truncated) $('chat-note').textContent = 'The answer was cut short. Ask a narrower question.';
+  } catch (e) {
+    const kept = e?.text ? splitPick(e.text).body : '';
+    if (kept) { bubble.textContent = kept; turns.push({ role: 'assistant', content: kept }); } else bubble.remove();
+    if (e?.code !== 'cancelled') $('chat-note').textContent = ERR[e?.code] || 'Claude could not answer just now. Ask again.';
+  }
+  ctl = null; $('chat-send').disabled = false; $('chat-stop').hidden = true;
+}
+$('chat-send').onclick = ask;
+$('chat-stop').onclick = () => ctl?.abort();
+$('chat-in').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); ask(); } });
+$('chat-clear').onclick = () => { if (ctl) return; turns.length = 0; $('msgs').textContent = ''; $('starters').hidden = false; $('chat-note').textContent = ''; };
+$('starters').querySelectorAll('button').forEach(b => b.onclick = () => { $('chat-in').value = b.textContent; $('chat-in').focus(); });
+
+function renderAll() { if (!isLoaded) return; renderImport(); renderPricing(); }
+route(); boot();
+})();
+</script>
+</body>
+</html>
