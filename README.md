@@ -23,7 +23,7 @@ A sales counter tool that answers four customer questions:
 ## Deploy on Netlify
 
 1. Push this folder to a GitHub repository. **Make the repository private**, and keep price data out of it (see below).
-2. In Netlify: **Add new site > Import an existing project**, pick the repository. Leave the build command empty; the publish directory is `public` (already set in `netlify.toml`).
+2. In Netlify: **Add new site > Import an existing project**, pick the repository. Leave the build command empty; the base directory is the repository root (`.`) and the publish directory is `public` (both set in `netlify.toml`). Keep the folder layout shown above when pushing the files.
 3. In **Site configuration > Environment variables**, add:
 
    | Variable | Value |
@@ -46,7 +46,7 @@ A sales counter tool that answers four customer questions:
 ## Run locally (optional)
 
 ```bash
-npm install
+npm ci
 ```
 
 ```bash
