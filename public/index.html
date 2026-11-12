@@ -271,8 +271,8 @@ details summary{cursor:pointer;color:var(--muted);font-size:12.5px}
   </main>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script src="/vendor/pdf.min.js"></script>
+<script src="/vendor/pdf.worker.min.js"></script>
 <script>
 (() => {
 const $ = id => document.getElementById(id);
@@ -488,7 +488,7 @@ function parseSheet(text) {
 
 /* ---------- import: reading PDFs with Claude ---------- */
 async function readPdf(file) {
-  if (!window.pdfjsLib) throw { message: 'The PDF reader did not load. Reload the page and try again.' };
+  if (!window.pdfjsLib) throw { message: 'The PDF reader did not load. Reload the page; if it keeps happening, check that the vendor folder was deployed with the site.' };
   const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer(), isEvalSupported: false, useWorkerFetch: false }).promise;
   const pages = Math.min(pdf.numPages, 40); let text = '';
   for (let p = 1; p <= pages; p++) {
