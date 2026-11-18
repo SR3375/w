@@ -19,17 +19,19 @@ export default safely(async (request) => {
   // "chat"    = the sales assistant (shorter, faster).
   const extract = body.kind === "extract";
   const client = new Anthropic({ apiKey });
+  const model = Netlify.env.get("CLAUDE_MODEL") || "claude-opus-5-5";
+  // Haiku models have no server-side refusal fallback, so the fallback options are left out for them.
+  const fallback = /haiku/i.test(model) ? {} : { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" };
 
   try {
     const upstream = await client.beta.messages
       .create({
-        model: Netlify.env.get("CLAUDE_MODEL") || "claude-opus-5-5",
+        model,
         max_tokens: extract ? 64000 : 16000,
         thinking: { type: "adaptive" },
         output_config: { effort: extract ? "high" : "medium" },
         // If a safety classifier declines a request, let the API retry it on a fallback model.
-        betas: ["server-side-fallback-2026-07-01"],
-        fallbacks: "default",
+        ...fallback,
         ...(typeof body.system === "string" && body.system ? { system: body.system } : {}),
         ...(Array.isArray(body.tools) && body.tools.length ? { tools: body.tools } : {}),
         messages: body.messages,
