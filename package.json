@@ -3,7 +3,10 @@
   "private": true,
   "type": "module",
   "description": "Sales quote tool: plan price, phone price, monthly total and PC Optimum points.",
-  "scripts": { "dev": "netlify dev" },
+  "scripts": {
+    "dev": "netlify dev",
+    "test": "node --test test/unit.test.mjs"
+  },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.8.0",
     "@netlify/blobs": "^11.1.9"

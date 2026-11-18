@@ -14,11 +14,31 @@ A sales counter tool that answers four customer questions:
 
 | Path | What it is |
 |---|---|
-| `public/index.html` | The whole page (HTML, CSS and JavaScript in one file) |
+| `public/index.html`, `public/styles.css` | The page markup and its styles |
+| `public/js/main.js` | Entry point: loading, access gate, status line, backup |
+| `public/js/store.js` | Holds the catalog and the current sale; loads and saves it |
+| `public/js/api.js` | Talks to `/api/catalog` and `/api/claude` |
+| `public/js/importer.js`, `pdfread.js`, `jsonl.js`, `sheet.js` | The import pipeline (see below) |
+| `public/js/importView.js`, `pricingView.js`, `chat.js` | The two steps of the page and the assistant |
+| `public/js/catalog.js`, `quote.js` | Column definitions and the quote engine (pure logic, covered by tests) |
+| `public/vendor/` | pdf.js 3.11.174, which reads PDFs in the browser |
 | `netlify/edge-functions/claude.js` | `/api/claude`: sends a request to the Claude API with the site's key |
 | `netlify/edge-functions/catalog.js` | `/api/catalog`: loads and saves the shared price data (Netlify Blobs) |
 | `netlify/lib/access.js` | Checks the team access code on every API call |
-| `netlify.toml`, `package.json` | Netlify settings and the two dependencies |
+| `test/` | Unit tests, a local test server and a browser test |
+
+There is no build step: the browser loads the files in `public/` as they are.
+
+## How importing a PDF works
+
+1. The browser opens the PDF and, for each page, takes its text and a picture of it.
+2. Each page is sent to Claude as its own small request, three pages at a time. Claude replies with one row per line.
+3. Rows are added to the table as each page finishes. The job card shows one box per page: done, incomplete or failed.
+4. If Claude is busy or the connection drops, the page is retried automatically. If it still fails, the rows that had already arrived are kept and a **Retry** button re-reads only those pages.
+5. Files dropped while another import is running wait in a queue.
+6. Importing a file with the same name again replaces the rows from that file.
+
+A banner at the top of the page says so whenever something is wrong: the server functions are not deployed, the API key is missing, or a save did not reach the server (with a **Retry** button; the rows are also kept in the browser).
 
 ## Deploy on Netlify
 
@@ -39,11 +59,13 @@ A sales counter tool that answers four customer questions:
 
 - **The access code is the only lock.** Anyone with the site address and the code can read the prices and spend API credit. Use a long code, share it only with staff, and change it in Netlify if it leaks. For stronger protection, turn on Netlify's password protection or put the site behind your company login.
 - **Do not commit price data.** Carrier sheets and promo grids are internal documents. Price data lives in Netlify Blobs, not in the repository; `.gitignore` already excludes `*.backup.json`.
-- **Claude costs money per use.** Importing a plan sheet or promo grid is one larger request; each assistant question is one or a few small ones. Pasting the Digital Price Sheet is free (it is read without Claude).
+- **Claude costs money per use.** Importing a plan sheet or promo grid is one request per page; each assistant question is one or a few small ones. Pasting the Digital Price Sheet is free (it is read without Claude).
 - **Refusal fallback is on.** If a safety filter declines a request, the API retries it on a fallback model automatically.
 - **Saving is last-write-wins.** If two people edit the same list at once, the later save replaces the earlier one. Download a backup before big changes.
 
 ## Run locally (optional)
+
+With Netlify and real keys (put `ANTHROPIC_API_KEY` and `ACCESS_CODE` in a `.env` file first; it is ignored by git):
 
 ```bash
 npm ci
@@ -53,4 +75,16 @@ npm ci
 npx netlify dev
 ```
 
-Put `ANTHROPIC_API_KEY` and `ACCESS_CODE` in a `.env` file first (it is ignored by git).
+Without Netlify or a key, against a fake Claude (access code `test`, data kept in memory):
+
+```bash
+node test/dev-server.mjs
+```
+
+## Tests
+
+```bash
+npm test
+```
+
+runs the unit tests for the quote engine, the price sheet reader and the row parser. `node test/e2e.mjs` runs the import flow in a real browser against `test/dev-server.mjs`; it needs Playwright installed.

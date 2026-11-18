@@ -1,9 +1,9 @@
 // POST /api/claude — one Claude turn, streamed back to the page as server-sent events.
 // The API key stays on the server; the page only ever talks to this route.
 import Anthropic from "@anthropic-ai/sdk";
-import { checkAccess, json } from "../lib/access.js";
+import { checkAccess, json, safely } from "../lib/access.js";
 
-export default async (request) => {
+export default safely(async (request) => {
   if (request.method !== "POST") return json(405, { error: "POST only" });
   const denied = checkAccess(request);
   if (denied) return denied;
@@ -15,21 +15,23 @@ export default async (request) => {
   try { body = await request.json(); } catch { return json(400, { error: "Body must be JSON." }); }
   if (!Array.isArray(body.messages) || !body.messages.length) return json(400, { error: "messages is required." });
 
-  // "extract" = reading a plan sheet or promo grid into rows (long, careful output).
+  // "extract" = reading one page of a plan sheet or promo grid into rows (careful, longer output).
   // "chat"    = the sales assistant (shorter, faster).
   const extract = body.kind === "extract";
   const client = new Anthropic({ apiKey });
+  const model = Netlify.env.get("CLAUDE_MODEL") || "claude-opus-5-5";
+  // Haiku models have no server-side refusal fallback, so the fallback options are left out for them.
+  const fallback = /haiku/i.test(model) ? {} : { betas: ["server-side-fallback-2026-07-01"], fallbacks: "default" };
 
   try {
     const upstream = await client.beta.messages
       .create({
-        model: Netlify.env.get("CLAUDE_MODEL") || "claude-opus-5-5",
+        model,
         max_tokens: extract ? 64000 : 16000,
         thinking: { type: "adaptive" },
         output_config: { effort: extract ? "high" : "medium" },
         // If a safety classifier declines a request, let the API retry it on a fallback model.
-        betas: ["server-side-fallback-2026-07-01"],
-        fallbacks: "default",
+        ...fallback,
         ...(typeof body.system === "string" && body.system ? { system: body.system } : {}),
         ...(Array.isArray(body.tools) && body.tools.length ? { tools: body.tools } : {}),
         messages: body.messages,
@@ -47,6 +49,6 @@ export default async (request) => {
     if (err instanceof Anthropic.APIError) return json(err.status && err.status !== 401 ? err.status : 502, { error: err.message });
     return json(502, { error: "Could not reach Claude." });
   }
-};
+});
 
 export const config = { path: "/api/claude" };

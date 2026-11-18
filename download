@@ -1,5 +1,0 @@
-node_modules
-.netlify
-.env
-*.backup.json
-quote-desk-data.json
