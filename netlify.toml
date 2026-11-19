@@ -1,6 +1,10 @@
 [build]
   base = "."
   publish = "public"
+  # The page is served from GitHub Pages now; Netlify only runs the /api routes. Skip the
+  # Netlify build (and its credits) when nothing that affects the routes has changed.
+  # Exit code 0 = skip. On a first build the cached ref is missing, git fails, and it builds.
+  ignore = "git diff --quiet $CACHED_COMMIT_REF $COMMIT_REF -- netlify/ netlify.toml package.json package-lock.json"
 
 [[headers]]
   for = "/*"
