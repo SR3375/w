@@ -55,6 +55,16 @@ A banner at the top of the page says so whenever something is wrong: the server 
 4. Trigger a deploy (**Deploys > Trigger deploy**) so the variables take effect.
 5. Open the site, enter the access code, go to **Import data > Backup > Restore from backup** and choose your backup file, or import the PDFs and paste the price sheet fresh.
 
+## Also on GitHub Pages (optional)
+
+The page can be served from GitHub Pages while the server routes stay on Netlify. On Pages, the page calls `https://shenruiliuwork.netlify.app/api/...` (set in `public/js/config.js`); the routes allow calls from `https://sr3375.github.io`, and further sites can be added in a Netlify variable `ALLOWED_ORIGINS` (comma separated).
+
+1. Netlify must be deployed once with this code, so the routes allow calls from GitHub Pages.
+2. In GitHub: **Settings > Pages > Build and deployment > Source: GitHub Actions**. A private repository needs a paid GitHub plan for Pages; the published site is public either way.
+3. Every change to `public/` on `main` then publishes to `https://sr3375.github.io/Shenruiliuwork/` through `.github/workflows/pages.yml`.
+
+Page-only changes then need no Netlify deploy, which saves Netlify credits; changes under `netlify/` still do. The access code is remembered per address, so staff enter it once more on the Pages address.
+
 ## Things to know
 
 - **The access code is the only lock.** Anyone with the site address and the code can read the prices and spend API credit. Use a long code, share it only with staff, and change it in Netlify if it leaks. For stronger protection, turn on Netlify's password protection or put the site behind your company login.
@@ -87,4 +97,4 @@ node test/dev-server.mjs
 npm test
 ```
 
-runs the unit tests for the quote engine, the price sheet reader and the row parser. `node test/e2e.mjs` runs the import flow in a real browser against `test/dev-server.mjs`; it needs Playwright installed.
+runs the unit tests for the quote engine, the price sheet reader and the row parser. `node test/e2e.mjs` runs the import flow in a real browser against `test/dev-server.mjs`, and `node test/cross-origin.mjs` checks the GitHub Pages setup (start the test server with `ALLOWED_ORIGINS=http://localhost:8898`); both need Playwright installed.

@@ -3,6 +3,7 @@
 import { ls, sleep } from './util.js';
 import { KINDS } from './catalog.js';
 import { apiFetch } from './api.js';
+import { API_BASE } from './config.js';
 
 export const state = {
   plans: [], devices: [], promos: [],
@@ -85,7 +86,8 @@ export async function load() {
     for (const k of KINDS) state[k] = ls.get('cat:' + k, []);
     let why = '';
     if (res && isJson) why = (await res.json().catch(() => ({}))).error || '';
-    server.problem = !res ? 'The server did not answer, so this page is working from this browser only and Claude is off. Check your connection and reload.'
+    server.problem = !res && API_BASE ? `This page could not reach the server routes at ${API_BASE}, so it is working from this browser only and Claude is off. Either the connection failed, or that Netlify site has not been redeployed since GitHub Pages support was added (it must allow calls from this address). Check your connection and reload.`
+      : !res ? 'The server did not answer, so this page is working from this browser only and Claude is off. Check your connection and reload.'
       : why ? `The server reported a problem: ${why}`
       : `The server functions are not deployed (/api/catalog answered HTTP ${res.status}). Data is saved in this browser only and Claude is off. On Netlify, check that the netlify/edge-functions folder is in the repository and the deploy log shows no errors.`;
   }

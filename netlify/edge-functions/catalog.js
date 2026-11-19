@@ -2,7 +2,7 @@
 // PUT /api/catalog  — replace one of the three lists: { kind, items }.
 // Stored in Netlify Blobs, so everyone using the site sees the same data.
 import { getStore } from "@netlify/blobs";
-import { checkAccess, json, safely } from "../lib/access.js";
+import { checkAccess, json, safely, withCors } from "../lib/access.js";
 
 const KINDS = ["plans", "devices", "promos"];
 const STORE = "quote-desk";
@@ -17,7 +17,7 @@ async function read(key) {
   }
 }
 
-export default safely(async (request) => {
+export default withCors(safely(async (request) => {
   const denied = checkAccess(request);
   if (denied) return denied;
 
@@ -36,6 +36,6 @@ export default safely(async (request) => {
   }
 
   return json(405, { error: "GET or PUT only" });
-});
+}));
 
 export const config = { path: "/api/catalog" };
