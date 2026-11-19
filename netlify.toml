@@ -7,3 +7,19 @@
   [headers.values]
     X-Robots-Tag = "noindex, nofollow"
     Referrer-Policy = "no-referrer"
+
+# The page now lives on GitHub Pages; this Netlify site only serves the /api routes.
+# Opening the Netlify address sends people to the Pages copy (the #import / #pricing part
+# of the address is kept by the browser). 302 rather than 301, so browsers do not remember
+# it for good if this is ever undone. Only the page itself is redirected, never /api/*.
+[[redirects]]
+  from = "/"
+  to = "https://sr3375.github.io/w/"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/index.html"
+  to = "https://sr3375.github.io/w/"
+  status = 302
+  force = true

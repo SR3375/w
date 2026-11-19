@@ -61,7 +61,9 @@ The page can be served from GitHub Pages while the server routes stay on Netlify
 
 1. Netlify must be deployed once with this code, so the routes allow calls from GitHub Pages.
 2. In GitHub: **Settings > Pages > Build and deployment > Source: GitHub Actions**. A private repository needs a paid GitHub plan for Pages; the published site is public either way.
-3. Every change to `public/` on `main` then publishes to `https://sr3375.github.io/Shenruiliuwork/` through `.github/workflows/pages.yml`.
+3. Every change to `public/` on `main` then publishes to `https://sr3375.github.io/w/` through `.github/workflows/pages.yml`.
+
+Opening the Netlify address itself redirects to the Pages copy (set in `netlify.toml`); the `/api` routes are not redirected.
 
 Page-only changes then need no Netlify deploy, which saves Netlify credits; changes under `netlify/` still do. The access code is remembered per address, so staff enter it once more on the Pages address.
 
