@@ -8,7 +8,8 @@ export default withCors(safely(async (request) => {
   const denied = checkAccess(request);
   if (denied) return denied;
 
-  const apiKey = Netlify.env.get("ANTHROPIC_API_KEY");
+  // Trimmed: a space or line break pasted along with the key makes Claude reject it.
+  const apiKey = (Netlify.env.get("ANTHROPIC_API_KEY") || "").trim();
   if (!apiKey) return json(500, { error: "ANTHROPIC_API_KEY is not set on this site." });
 
   let body;
@@ -43,10 +44,16 @@ export default withCors(safely(async (request) => {
       headers: { "content-type": "text/event-stream", "cache-control": "no-store" },
     });
   } catch (err) {
-    if (err instanceof Anthropic.AuthenticationError || err instanceof Anthropic.PermissionDeniedError)
-      return json(502, { error: "Claude rejected this site's API key. Check ANTHROPIC_API_KEY in Netlify." });
+    // Claude's own explanation, e.g. "invalid x-api-key", without the raw JSON around it.
+    const why = err?.error?.error?.message || err?.message || "";
+    // 502, not 401/403: to the page, 401 means a wrong team access code.
+    if (err instanceof Anthropic.AuthenticationError)
+      return json(502, { code: "bad_key", error: `Claude rejected this site's API key (${why}). Check ANTHROPIC_API_KEY in Netlify: it should be an API key from platform.claude.com starting with sk-ant-api, copied in full. Then redeploy.` });
+    if (err instanceof Anthropic.PermissionDeniedError)
+      return json(502, { code: "bad_key", error: `This site's API key is not allowed to make this request (${why}). Check the key's workspace and the model in CLAUDE_MODEL.` });
     if (err instanceof Anthropic.RateLimitError) return json(429, { error: "Claude rate limit reached." });
-    if (err instanceof Anthropic.APIError) return json(err.status && err.status !== 401 ? err.status : 502, { error: err.message });
+    if (err instanceof Anthropic.APIError)
+      return json(err.status && err.status !== 401 ? err.status : 502, { code: err.status >= 500 ? undefined : "bad_request", error: why });
     return json(502, { error: "Could not reach Claude." });
   }
 }));

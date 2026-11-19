@@ -160,6 +160,7 @@ async function runUnit(job, unit) {
         const res = await converse(ask, { kind: 'extract', images: src.image ? [src.image] : undefined, signal, onText: ({ text }) => { unit.live = scanObjects(text).length; notify(); } });
         unit.rows = toRows(job, unit, res.text);
         unit.status = res.truncated || src.cut ? 'partial' : 'ok';
+        unit.error = '';                                  // clear any "Trying again…" from an earlier attempt
         if (res.truncated) unit.error = 'The reply was cut off, so some rows may be missing.';
         else if (src.cut) unit.error = 'The text was too long and only the first part was read.';
         break;
