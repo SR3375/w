@@ -57,7 +57,7 @@ A banner at the top of the page says so whenever something is wrong: the server 
 
 ## Also on GitHub Pages (optional)
 
-The page can be served from GitHub Pages while the server routes stay on Netlify. On Pages, the page calls `https://lsrwork.netlify.app/api/...` (set in `public/js/config.js`); the routes allow calls from `https://sr3375.github.io`, and further sites can be added in a Netlify variable `ALLOWED_ORIGINS` (comma separated).
+The page can be served from GitHub Pages while the server routes stay on Netlify. On Pages, the page calls `https://srlwork.netlify.app/api/...` (set in `public/js/config.js`); the routes allow calls from `https://sr3375.github.io`, and further sites can be added in a Netlify variable `ALLOWED_ORIGINS` (comma separated).
 
 1. Netlify must be deployed once with this code, so the routes allow calls from GitHub Pages.
 2. In GitHub: **Settings > Pages > Build and deployment > Source: GitHub Actions**. A private repository needs a paid GitHub plan for Pages; the published site is public either way.
