@@ -8,6 +8,7 @@
 //   { failSaves: true }  PUT /api/catalog answers 500
 //   { slow: 400 }        milliseconds between streamed rows
 //   { reset: true }      empty the catalog
+//   { badKey: true }     Claude rejects the API key
 // ALLOWED_ORIGINS=http://localhost:8898 lets a copy of the page on another port call these routes.
 import http from 'node:http';
 import fs from 'node:fs';
@@ -38,6 +39,10 @@ http.createServer(async (req, res) => {
   const page = Number((prompt.match(/PAGE (\d+) of/) || [])[1] || 1);
   const isExtract = /JSON Lines/.test(prompt);
 
+  if (mode.badKey) {
+    res.writeHead(401, { 'content-type': 'application/json' });
+    return res.end(JSON.stringify({ type: 'error', error: { type: 'authentication_error', message: 'invalid x-api-key' } }));
+  }
   if (isExtract && mode.overloadOnce === page && !seen.overloaded.has(page)) {
     seen.overloaded.add(page);
     res.writeHead(529, { 'content-type': 'application/json', 'x-should-retry': 'false' });

@@ -36,7 +36,8 @@ async function claudeTurn(body, signal, onDelta) {
   catch { throw { code: signal?.aborted ? 'cancelled' : 'no_server' }; }
   if (!res.ok) {
     const j = await res.json().catch(() => ({}));
-    const code = res.status === 401 ? 'unauthorized' : res.status === 429 || res.status === 529 ? 'rate_limited' : res.status === 413 ? 'prompt_too_large' : res.status === 404 ? 'no_route' : 'upstream_error';
+    // The server names problems that retrying cannot fix (bad API key, bad request), so they are not retried.
+    const code = j.code ? j.code : res.status === 401 ? 'unauthorized' : res.status === 429 || res.status === 529 ? 'rate_limited' : res.status === 413 ? 'prompt_too_large' : res.status === 404 ? 'no_route' : 'upstream_error';
     throw { code, message: j.error || `The server answered with HTTP ${res.status}.` };
   }
   const blocks = [], bufs = {};

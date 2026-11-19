@@ -58,6 +58,7 @@ await step('imports a 5-page PDF page by page; a busy server, a truncated page a
   assert.equal(await page.locator('#jobs-plans .pg.partial').count(), 2);
   assert.match(await text('#jobs-plans'), /Page 3: The reply was cut off/);
   assert.match(await text('#jobs-plans'), /Page 4: .*dropped/);
+  assert.doesNotMatch(await text('#jobs-plans'), /Page 2:/, 'a page that worked on retry shows no leftover message');
   await jobDone('promos', /4 rows imported/);
   assert.equal(await rows('promos'), 4);
 });
@@ -78,6 +79,17 @@ await step('importing the same file again replaces its rows instead of doubling 
   await page.setInputFiles('#file-plans', single);
   await page.waitForFunction(() => document.querySelectorAll('#jobs-plans .job.ok').length === 3, null, { timeout: 30000 });
   assert.equal(await rows('plans'), 18);
+});
+
+await step('a rejected API key is reported with the reason and not retried', async () => {
+  await mode({ badKey: true });
+  const before = (await seen()).requests;
+  await page.setInputFiles('#file-plans', single);
+  await page.waitForFunction(() => /single\.pdf — .*invalid x-api-key/.test(document.querySelector('#jobs-plans').textContent), null, { timeout: 30000 });
+  assert.doesNotMatch(await page.locator('#jobs-plans .job').last().textContent(), /Trying again/);
+  assert.equal((await seen()).requests - before, 1);
+  await page.click('#jobs-plans .job.err button[aria-label="Hide this message"]');
+  await mode({});
 });
 
 await step('a file that is not a PDF gets a message', async () => {
