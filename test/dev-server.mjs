@@ -8,6 +8,7 @@
 //   { failSaves: true }  PUT /api/catalog answers 500
 //   { slow: 400 }        milliseconds between streamed rows
 //   { reset: true }      empty the catalog
+// ALLOWED_ORIGINS=http://localhost:8898 lets a copy of the page on another port call these routes.
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -63,13 +64,26 @@ http.createServer(async (req, res) => {
 
 /* ---------- the site ---------- */
 process.env.ANTHROPIC_BASE_URL = `http://localhost:${FAKE}`;
-const env = { ACCESS_CODE: 'test', ANTHROPIC_API_KEY: process.env.NO_KEY ? '' : 'sk-test' };
+const env = { ACCESS_CODE: 'test', ANTHROPIC_API_KEY: process.env.NO_KEY ? '' : 'sk-test', ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS || '' };
 globalThis.Netlify = { env: { get: k => env[k] } };
 const { default: claude } = await import('../netlify/edge-functions/claude.js');
-const { checkAccess, json } = await import('../netlify/lib/access.js');
+const { checkAccess, json, withCors } = await import('../netlify/lib/access.js');
 
 const store = { plans: [], devices: [], promos: [] };
 const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.txt': 'text/plain' };
+
+// Stand-in for netlify/edge-functions/catalog.js (Netlify Blobs only runs on Netlify).
+const catalog = withCors(async (request) => {
+  const denied = checkAccess(request);
+  if (denied) return denied;
+  if (request.method === 'PUT') {
+    if (mode.failSaves) return json(500, { error: 'test: save failed' });
+    const j = await request.json();
+    store[j.kind] = j.items;
+    return json(200, { ok: true });
+  }
+  return json(200, { ...store, ai: !!env.ANTHROPIC_API_KEY });
+});
 
 async function send(res, response) {
   res.writeHead(response.status, Object.fromEntries(response.headers));
@@ -87,17 +101,7 @@ http.createServer(async (req, res) => {
   if (url.pathname === '/__mode') { for (const k in mode) delete mode[k]; Object.assign(mode, JSON.parse(body.toString() || '{}')); seen.overloaded.clear(); if (mode.reset) for (const k in store) store[k] = []; return send(res, json(200, mode)); }
   if (url.pathname === '/__seen') return send(res, json(200, { requests: seen.requests, store: { plans: store.plans.length, devices: store.devices.length, promos: store.promos.length } }));
   if (url.pathname === '/api/claude') return send(res, await claude(request));
-  if (url.pathname === '/api/catalog') {
-    const denied = checkAccess(request);
-    if (denied) return send(res, denied);
-    if (req.method === 'PUT') {
-      if (mode.failSaves) return send(res, json(500, { error: 'test: save failed' }));
-      const j = JSON.parse(body.toString());
-      store[j.kind] = j.items;
-      return send(res, json(200, { ok: true }));
-    }
-    return send(res, json(200, { ...store, ai: !!env.ANTHROPIC_API_KEY }));
-  }
+  if (url.pathname === '/api/catalog') return send(res, await catalog(request));
   const file = path.join(pub, url.pathname === '/' ? 'index.html' : url.pathname);
   if (!file.startsWith(pub) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); return res.end('Not found'); }
   res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream', 'cache-control': 'no-store' });

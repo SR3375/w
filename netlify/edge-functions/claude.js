@@ -1,9 +1,9 @@
 // POST /api/claude — one Claude turn, streamed back to the page as server-sent events.
 // The API key stays on the server; the page only ever talks to this route.
 import Anthropic from "@anthropic-ai/sdk";
-import { checkAccess, json, safely } from "../lib/access.js";
+import { checkAccess, json, safely, withCors } from "../lib/access.js";
 
-export default safely(async (request) => {
+export default withCors(safely(async (request) => {
   if (request.method !== "POST") return json(405, { error: "POST only" });
   const denied = checkAccess(request);
   if (denied) return denied;
@@ -49,6 +49,6 @@ export default safely(async (request) => {
     if (err instanceof Anthropic.APIError) return json(err.status && err.status !== 401 ? err.status : 502, { error: err.message });
     return json(502, { error: "Could not reach Claude." });
   }
-});
+}));
 
 export const config = { path: "/api/claude" };

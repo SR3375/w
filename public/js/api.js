@@ -1,5 +1,6 @@
 // Everything that talks to this site's own server routes: /api/catalog and /api/claude.
 // Errors are thrown as { code, message } so callers can show a plain sentence.
+import { API_BASE } from './config.js';
 
 let accessCode = '';
 try { accessCode = localStorage.getItem('qd2:code') || ''; } catch {}
@@ -7,7 +8,7 @@ export const hasAccessCode = () => !!accessCode;
 export function setAccessCode(code) { accessCode = code; try { localStorage.setItem('qd2:code', code); } catch {} }
 
 export const apiFetch = (path, opts = {}) =>
-  fetch(path, { ...opts, headers: { 'content-type': 'application/json', 'x-access-code': accessCode, ...(opts.headers || {}) } });
+  fetch(API_BASE + path, { ...opts, headers: { 'content-type': 'application/json', 'x-access-code': accessCode, ...(opts.headers || {}) } });
 
 export const ERR = {
   unauthorized: 'The access code is no longer accepted. Reload the page and enter it again.',
